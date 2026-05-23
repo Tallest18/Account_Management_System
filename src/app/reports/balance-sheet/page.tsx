@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { AuthGuard } from '@/components/auth/AuthGuard';
 import { useAuth } from '@/context/AuthContext';
 import { getAccounts } from '@/lib/db';
@@ -7,7 +7,7 @@ import { Account } from '@/types';
 import { formatCurrency, sumBy } from '@/lib/utils';
 import {
   Download, RefreshCw, TrendingUp, TrendingDown,
-  Scale, CheckCircle2, AlertTriangle, ChevronRight,
+  Scale, CheckCircle2, AlertTriangle,
   Building2, Layers, PiggyBank, CreditCard, BarChart3
 } from 'lucide-react';
 
@@ -15,21 +15,6 @@ import {
 function pct(part: number, total: number) {
   if (!total) return 0;
   return Math.min(100, Math.round(Math.abs(part / total) * 100));
-}
-
-/* ─── Mini sparkbar ─── */
-function Bar({ value, total, color }: { value: number; total: number; color: string }) {
-  const w = pct(value, total);
-  return (
-    <div style={{ height: 3, background: 'rgba(255,255,255,0.06)', borderRadius: 4, overflow: 'hidden', marginTop: 4 }}>
-      <div
-        style={{
-          height: '100%', width: `${w}%`, background: color,
-          borderRadius: 4, transition: 'width 0.8s cubic-bezier(0.34,1.2,0.64,1)',
-        }}
-      />
-    </div>
-  );
 }
 
 /* ─── Stat card ─── */
@@ -44,7 +29,6 @@ function KPI({ label, value, icon, color, sub }: { label: string; value: string;
       display: 'flex', flexDirection: 'column', gap: 14,
       position: 'relative', overflow: 'hidden',
     }}>
-      {/* glow */}
       <div style={{ position: 'absolute', top: -30, right: -30, width: 100, height: 100, borderRadius: '50%', background: color, opacity: 0.06, filter: 'blur(30px)', pointerEvents: 'none' }} />
       <div style={{ width: 38, height: 38, borderRadius: 11, background: `${color}18`, border: `1px solid ${color}28`, display: 'flex', alignItems: 'center', justifyContent: 'center', color }}>
         {icon}
@@ -75,20 +59,16 @@ function AccountRow({ a, currency, total, color }: { a: Account; currency: strin
         gap: 12,
       }}
     >
-      {/* bar accent */}
       <div style={{ width: 3, height: 28, borderRadius: 4, background: color, opacity: hovered ? 1 : 0.25, transition: 'opacity 0.15s', flexShrink: 0 }} />
-
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
           <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 11, color: 'rgba(255,255,255,0.3)' }}>{a.code}</span>
           <span style={{ fontSize: 13.5, color: 'rgba(255,255,255,0.75)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.name}</span>
         </div>
-        {/* mini bar */}
         <div style={{ height: 2, background: 'rgba(255,255,255,0.06)', borderRadius: 4, marginTop: 5, overflow: 'hidden' }}>
           <div style={{ height: '100%', width: `${w}%`, background: color, opacity: 0.45, borderRadius: 4, transition: 'width 1s ease' }} />
         </div>
       </div>
-
       <span style={{ fontFamily: "'DM Mono', monospace", fontSize: 13.5, fontWeight: 500, color: '#fff', flexShrink: 0 }}>
         {formatCurrency(a.balance, currency)}
       </span>
@@ -106,7 +86,6 @@ function Section({
 }) {
   return (
     <div style={{ marginBottom: 6 }}>
-      {/* section header */}
       <div style={{
         display: 'flex', alignItems: 'center', gap: 10,
         padding: '10px 22px',
@@ -130,7 +109,6 @@ function Section({
         accounts.map((a) => <AccountRow key={a.id} a={a} currency={currency} total={grandTotal} color={color} />)
       )}
 
-      {/* subtotal */}
       <div style={{
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         padding: '12px 22px',
@@ -172,24 +150,38 @@ function GrandTotal({ label, value, currency, balanced }: { label: string; value
 /* ═══════════════════════════════════════ MAIN ═══════════════════════════════════════ */
 export default function BalanceSheetPage() {
   const { user, company } = useAuth();
-  const [accounts, setAccounts] = useState<Account[]>([]);
-  const [loading, setLoading] = useState(true);
+
+  // Atomic state — zero synchronous setState in any effect body.
+  const [{ accounts, loading }, setData] = useState<{
+    accounts: Account[];
+    loading: boolean;
+  }>({ accounts: [], loading: true });
+
   const [refreshing, setRefreshing] = useState(false);
-  const [mounted, setMounted] = useState(false);
 
   const cur = company?.currency ?? 'USD';
   const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
-  const load = useCallback(async (isRefresh = false) => {
-    if (!user) return;
-    isRefresh ? setRefreshing(true) : setLoading(true);
-    const data = await getAccounts(user.companyId);
-    setAccounts(data);
-    isRefresh ? setRefreshing(false) : setLoading(false);
-    setMounted(true);
-  }, [user]);
+  const companyId = user?.companyId;
 
-  useEffect(() => { load(); }, [load]);
+  // No synchronous setState in the effect body.
+  // setData() only runs inside .then() — async boundary, permitted.
+  useEffect(() => {
+    if (!companyId) return;
+    getAccounts(companyId).then((data) => {
+      setData({ accounts: data, loading: false });
+    });
+  }, [companyId]);
+
+  // Manual refresh — outside useEffect entirely.
+  function handleRefresh() {
+    if (!companyId) return;
+    setRefreshing(true);
+    getAccounts(companyId).then((data) => {
+      setData({ accounts: data, loading: false });
+      setRefreshing(false);
+    });
+  }
 
   /* compute */
   const assetAccounts   = accounts.filter((a) => a.type === 'asset');
@@ -216,7 +208,6 @@ export default function BalanceSheetPage() {
   const isBalanced          = Math.abs(totalAssets - totalLiabEquity) < 0.01;
   const diff                = Math.abs(totalAssets - totalLiabEquity);
 
-  /* ratio */
   const debtRatio = totalAssets ? totalLiabilities / totalAssets : 0;
 
   return (
@@ -263,10 +254,9 @@ export default function BalanceSheetPage() {
               </p>
             </div>
 
-            {/* Actions */}
             <div style={{ display:'flex', gap:10 }}>
               <button
-                onClick={() => load(true)}
+                onClick={handleRefresh}
                 style={{
                   background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.1)',
                   borderRadius:12, padding:'9px 18px', fontSize:13, fontWeight:500, color:'rgba(255,255,255,0.7)',
@@ -306,9 +296,9 @@ export default function BalanceSheetPage() {
           <>
             {/* ── KPI row ── */}
             <div className="panel" style={{ animationDelay:'0.08s', display:'flex', gap:14, marginBottom:32, flexWrap:'wrap' }}>
-              <KPI label="Total Assets" value={formatCurrency(totalAssets, cur)} icon={<BarChart3 size={18} />} color="#3dba7e" sub="All owned resources" />
+              <KPI label="Total Assets"      value={formatCurrency(totalAssets, cur)}      icon={<BarChart3 size={18} />} color="#3dba7e" sub="All owned resources" />
               <KPI label="Total Liabilities" value={formatCurrency(totalLiabilities, cur)} icon={<CreditCard size={18} />} color="#e24b4a" sub="All obligations" />
-              <KPI label="Total Equity" value={formatCurrency(totalEquity, cur)} icon={<PiggyBank size={18} />} color="#c3a26e" sub={`Retained: ${formatCurrency(retainedEarnings, cur)}`} />
+              <KPI label="Total Equity"      value={formatCurrency(totalEquity, cur)}      icon={<PiggyBank size={18} />} color="#c3a26e" sub={`Retained: ${formatCurrency(retainedEarnings, cur)}`} />
               <KPI
                 label="Debt Ratio"
                 value={`${(debtRatio * 100).toFixed(1)}%`}
@@ -366,7 +356,6 @@ export default function BalanceSheetPage() {
                     grandTotal={totalAssets}
                   />
 
-                  {/* Ratio bar */}
                   <div style={{ padding:'14px 22px 6px', borderTop:'1px solid rgba(255,255,255,0.06)' }}>
                     <div style={{ display:'flex', justifyContent:'space-between', fontSize:11, color:'rgba(255,255,255,0.25)', marginBottom:6 }}>
                       <span>Current</span><span>Fixed</span>
@@ -410,13 +399,11 @@ export default function BalanceSheetPage() {
                     grandTotal={totalLiabEquity}
                   />
 
-                  {/* Total Liabilities line */}
                   <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'11px 22px', background:'rgba(226,75,74,0.05)', borderBottom:'1px solid rgba(255,255,255,0.05)' }}>
                     <span style={{ fontSize:13, fontWeight:700, color:'rgba(255,255,255,0.55)' }}>Total Liabilities</span>
                     <span style={{ fontFamily:"'DM Mono',monospace", fontSize:14, fontWeight:700, color:'#e24b4a' }}>{formatCurrency(totalLiabilities, cur)}</span>
                   </div>
 
-                  {/* Equity section */}
                   <Section
                     icon={<PiggyBank size={13} />}
                     title="Equity"
@@ -428,7 +415,6 @@ export default function BalanceSheetPage() {
                     grandTotal={totalLiabEquity}
                   />
 
-                  {/* Retained earnings */}
                   <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'11px 22px 11px 38px', borderBottom:'1px solid rgba(255,255,255,0.04)', background: retainedEarnings >= 0 ? 'rgba(61,186,126,0.04)' : 'rgba(226,75,74,0.04)' }}>
                     <span style={{ fontSize:13, color:'rgba(255,255,255,0.45)' }}>Retained Earnings (Current)</span>
                     <span style={{ fontFamily:"'DM Mono',monospace", fontSize:13, fontWeight:600, color: retainedEarnings >= 0 ? '#3dba7e' : '#e24b4a' }}>
@@ -436,13 +422,11 @@ export default function BalanceSheetPage() {
                     </span>
                   </div>
 
-                  {/* Total Equity */}
                   <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'11px 22px', background:'rgba(195,162,110,0.05)', borderBottom:'1px solid rgba(255,255,255,0.05)' }}>
                     <span style={{ fontSize:13, fontWeight:700, color:'rgba(255,255,255,0.55)' }}>Total Equity</span>
                     <span style={{ fontFamily:"'DM Mono',monospace", fontSize:14, fontWeight:700, color:'#c3a26e' }}>{formatCurrency(totalEquity, cur)}</span>
                   </div>
 
-                  {/* Ratio bar */}
                   <div style={{ padding:'14px 22px 6px', borderTop:'1px solid rgba(255,255,255,0.06)' }}>
                     <div style={{ display:'flex', justifyContent:'space-between', fontSize:11, color:'rgba(255,255,255,0.25)', marginBottom:6 }}>
                       <span>Liabilities</span><span>Equity</span>

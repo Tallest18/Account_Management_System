@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { AuthGuard } from '@/components/auth/AuthGuard';
 import { useAuth } from '@/context/AuthContext';
 import { getAccounts } from '@/lib/db';
@@ -194,7 +194,6 @@ function MetricDivider({ label, value, currency, pctOfRevenue, positive }: {
   label: string; value: number; currency: string; pctOfRevenue?: number; positive?: boolean;
 }) {
   const isPos = value >= 0;
-  /* neutral divider colour: amber #f5a623 → indigo #818cf8 */
   const col = isPos ? (positive === false ? '#818cf8' : '#10b981') : '#ef4444';
   return (
     <div style={{
@@ -230,8 +229,18 @@ function MetricDivider({ label, value, currency, pctOfRevenue, positive }: {
 ═══════════════════════════════ */
 export default function ProfitLossPage() {
   const { user, company } = useAuth();
-  const [accounts, setAccounts] = useState<Account[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Single state object so accounts + loading update atomically in one setState
+  // call inside .then() — the only place setState is ever called. The effect body
+  // itself has zero setState calls, satisfying react-hooks/set-state-in-effect.
+  // loading starts true so the spinner shows on first render without any effect
+  // needing to set it. When companyId is absent the effect never runs and loading
+  // stays true, but the AuthGuard above guarantees companyId is always present
+  // by the time this component renders meaningfully.
+  const [{ accounts, loading }, setData] = useState<{
+    accounts: Account[];
+    loading: boolean;
+  }>({ accounts: [], loading: true });
+
   const [refreshing, setRefreshing] = useState(false);
   const [period, setPeriod] = useState<'month' | 'quarter' | 'year'>('month');
 
@@ -243,15 +252,26 @@ export default function ProfitLossPage() {
     ? `Q${Math.ceil((today.getMonth() + 1) / 3)} ${today.getFullYear()}`
     : `FY ${today.getFullYear()}`;
 
-  const load = useCallback(async (isRefresh = false) => {
-    if (!user) return;
-    isRefresh ? setRefreshing(true) : setLoading(true);
-    const data = await getAccounts(user.companyId);
-    setAccounts(data);
-    isRefresh ? setRefreshing(false) : setLoading(false);
-  }, [user]);
+  const companyId = user?.companyId;
 
-  useEffect(() => { load(); }, [load]);
+  // Zero setState in the effect body. The single setState lives inside .then()
+  // (async boundary) — permitted by react-hooks/set-state-in-effect.
+  useEffect(() => {
+    if (!companyId) return;
+    getAccounts(companyId).then((data) => {
+      setData({ accounts: data, loading: false });
+    });
+  }, [companyId]);
+
+  // Manual refresh lives entirely outside useEffect — no lint concern.
+  function handleRefresh() {
+    if (!companyId) return;
+    setRefreshing(true);
+    getAccounts(companyId).then((data) => {
+      setData({ accounts: data, loading: false });
+      setRefreshing(false);
+    });
+  }
 
   const revenueAccounts  = accounts.filter((a) => a.type === 'revenue');
   const cogsAccounts     = accounts.filter((a) => a.category === 'cogs');
@@ -285,7 +305,6 @@ export default function ProfitLossPage() {
           letter-spacing:0.04em; color:rgba(255,255,255,0.45); cursor:pointer;
           font-family:'Outfit',sans-serif; transition:all 0.15s;
         }
-        /* active period: white highlight → indigo */
         .period-btn.active { background:rgba(99,102,241,0.18); border-color:rgba(99,102,241,0.35); color:#a5b4fc; }
         .period-btn:hover  { color:rgba(255,255,255,0.8); }
       `}</style>
@@ -294,13 +313,12 @@ export default function ProfitLossPage() {
         className="pl-page"
         style={{
           minHeight: '100vh',
-          /* Page bg: purple-tinted → indigo-tinted matching login */
           background: 'linear-gradient(148deg, #07070f 0%, #0a0a18 50%, #07070f 100%)',
           padding: '40px 48px',
           position: 'relative', overflow: 'hidden',
         }}
       >
-        {/* Ambient glows: purple/green/red → indigo/violet/blue */}
+        {/* Ambient glows */}
         <div style={{ position:'absolute', top:-100, right:-60, width:380, height:380, borderRadius:'50%', background:'#4f46e5', opacity:0.07, filter:'blur(100px)', pointerEvents:'none' }} />
         <div style={{ position:'absolute', bottom:-60, left:-80, width:340, height:340, borderRadius:'50%', background:'#7c3aed', opacity:0.05, filter:'blur(90px)', pointerEvents:'none' }} />
         <div style={{ position:'absolute', top:'40%', left:'50%', width:300, height:300, borderRadius:'50%', background:'#6366f1', opacity:0.04, filter:'blur(120px)', pointerEvents:'none' }} />
@@ -310,7 +328,6 @@ export default function ProfitLossPage() {
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', flexWrap:'wrap', gap:20 }}>
             <div>
               <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:6 }}>
-                {/* Header icon: purple #a855f7 → indigo */}
                 <div style={{ width:38, height:38, borderRadius:11, background:'rgba(99,102,241,0.12)', border:'1px solid rgba(99,102,241,0.25)', display:'flex', alignItems:'center', justifyContent:'center', color:'#818cf8' }}>
                   <TrendingUp size={18} />
                 </div>
@@ -332,7 +349,7 @@ export default function ProfitLossPage() {
                 ))}
               </div>
               <button
-                onClick={() => load(true)}
+                onClick={handleRefresh}
                 style={{ background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:12, padding:'9px 16px', fontSize:13, fontWeight:500, color:'rgba(255,255,255,0.7)', cursor:'pointer', display:'flex', alignItems:'center', gap:7, fontFamily:"'Outfit',sans-serif", transition:'all 0.15s' }}
                 onMouseEnter={(e) => { e.currentTarget.style.background='rgba(99,102,241,0.1)'; e.currentTarget.style.color='#a5b4fc'; }}
                 onMouseLeave={(e) => { e.currentTarget.style.background='rgba(255,255,255,0.06)'; e.currentTarget.style.color='rgba(255,255,255,0.7)'; }}
@@ -340,7 +357,6 @@ export default function ProfitLossPage() {
                 <RefreshCw size={14} className={refreshing ? 'spin-icon' : ''} />
                 {refreshing ? 'Refreshing…' : 'Refresh'}
               </button>
-              {/* Export button: purple gradient → indigo/violet gradient */}
               <button
                 style={{ background:'linear-gradient(135deg, #4f46e5, #7c3aed)', border:'none', borderRadius:12, padding:'9px 18px', fontSize:13, fontWeight:600, color:'#fff', cursor:'pointer', display:'flex', alignItems:'center', gap:7, fontFamily:"'Outfit',sans-serif", transition:'all 0.2s', boxShadow:'0 0 20px rgba(99,102,241,0.25)' }}
                 onMouseEnter={(e) => { e.currentTarget.style.transform='translateY(-1px)'; e.currentTarget.style.boxShadow='0 8px 24px rgba(99,102,241,0.4)'; }}
@@ -355,7 +371,6 @@ export default function ProfitLossPage() {
 
         {loading ? (
           <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'100px 0', gap:18 }}>
-            {/* Spinner: purple → indigo */}
             <div style={{ width:40, height:40, border:'3px solid rgba(99,102,241,0.12)', borderTopColor:'#6366f1', borderRadius:'50%', animation:'spin 0.9s linear infinite' }} />
             <p style={{ color:'rgba(255,255,255,0.3)', fontSize:14, margin:0 }}>Loading income statement…</p>
           </div>
@@ -363,11 +378,8 @@ export default function ProfitLossPage() {
           <>
             {/* ── KPI row ── */}
             <div className="pl-panel" style={{ animationDelay:'0.06s', display:'flex', gap:14, marginBottom:28, flexWrap:'wrap' }}>
-              {/* Revenue: green kept (semantic positive) */}
               <KPI label="Total Revenue"     value={totalRevenue}    currency={cur} color="#10b981" icon={<ArrowUpRight size={17} />} sub="All income sources" />
-              {/* Gross profit: blue #4a90d9 → indigo #6366f1 */}
               <KPI label="Gross Profit"      value={grossProfit}     currency={cur} color="#6366f1" icon={<Target size={17} />}      pct={grossMargin} sub="After cost of goods" />
-              {/* Operating income: purple #a855f7 → violet #a78bfa */}
               <KPI label="Operating Income"  value={operatingIncome} currency={cur} color="#a78bfa" icon={<Zap size={17} />}         pct={opMargin}    sub="After operating expenses" />
               <KPI label="Net Income"        value={netIncome}       currency={cur} color={netIncome >= 0 ? '#10b981' : '#ef4444'} icon={netIncome >= 0 ? <TrendingUp size={17} /> : <TrendingDown size={17} />} pct={netMargin} sub="Bottom line" />
             </div>
@@ -387,9 +399,7 @@ export default function ProfitLossPage() {
                   <Percent size={14} style={{ color:'rgba(255,255,255,0.3)' }} />
                   <span style={{ fontSize:12, fontWeight:700, letterSpacing:'0.06em', textTransform:'uppercase', color:'rgba(255,255,255,0.3)' }}>Margin Analysis</span>
                 </div>
-                {/* Gross margin: blue #4a90d9 → indigo #6366f1 */}
                 <MarginMeter value={grossMargin} label="Gross Margin"     color="#6366f1" />
-                {/* Op margin: purple #a855f7 → violet #a78bfa */}
                 <MarginMeter value={opMargin}    label="Operating Margin" color="#a78bfa" />
                 <MarginMeter value={netMargin}   label="Net Margin"       color={netMargin >= 0 ? '#10b981' : '#ef4444'} />
               </div>
@@ -404,7 +414,6 @@ export default function ProfitLossPage() {
                 borderRadius:20, overflow:'hidden',
               }}
             >
-              {/* Revenue — green kept */}
               <PLSection
                 icon={<ArrowUpRight size={15} />}
                 title="Revenue"
@@ -416,7 +425,6 @@ export default function ProfitLossPage() {
                 currency={cur}
               />
 
-              {/* COGS — amber kept as a distinct warning colour */}
               <PLSection
                 icon={<ShoppingCart size={15} />}
                 title="Cost of Goods Sold"
@@ -430,7 +438,6 @@ export default function ProfitLossPage() {
                 revenueTotal={totalRevenue}
               />
 
-              {/* Gross Profit divider */}
               <MetricDivider
                 label="Gross Profit"
                 value={grossProfit}
@@ -438,7 +445,6 @@ export default function ProfitLossPage() {
                 pctOfRevenue={totalRevenue > 0 ? grossMargin : undefined}
               />
 
-              {/* OpEx — red kept (semantic cost) */}
               <PLSection
                 icon={<Zap size={15} />}
                 title="Operating Expenses"
@@ -452,7 +458,6 @@ export default function ProfitLossPage() {
                 revenueTotal={totalRevenue}
               />
 
-              {/* Operating Income divider */}
               <MetricDivider
                 label="Operating Income"
                 value={operatingIncome}
@@ -460,7 +465,6 @@ export default function ProfitLossPage() {
                 pctOfRevenue={totalRevenue > 0 ? opMargin : undefined}
               />
 
-              {/* Other Expenses */}
               {otherExpAccounts.length > 0 && (
                 <PLSection
                   icon={<MoreHorizontal size={15} />}
@@ -516,12 +520,9 @@ export default function ProfitLossPage() {
                 }}
               >
                 {[
-                  /* COGS card: amber #f5a623 → keep as distinct warning colour */
-                  { label: 'COGS / Revenue',   value: totalRevenue > 0 ? (totalCOGS / totalRevenue) * 100 : 0,   color: '#f59e0b', desc: 'Cost efficiency' },
-                  /* OpEx card: red kept semantic */
-                  { label: 'OpEx / Revenue',   value: totalRevenue > 0 ? (totalOpex / totalRevenue) * 100 : 0,   color: '#ef4444', desc: 'Operating efficiency' },
-                  /* Profit retention: green/red semantic */
-                  { label: 'Profit Retention', value: totalRevenue > 0 ? (netIncome / totalRevenue) * 100 : 0,   color: netIncome >= 0 ? '#10b981' : '#ef4444', desc: 'Net margin' },
+                  { label: 'COGS / Revenue',   value: totalRevenue > 0 ? (totalCOGS / totalRevenue) * 100 : 0,  color: '#f59e0b', desc: 'Cost efficiency' },
+                  { label: 'OpEx / Revenue',   value: totalRevenue > 0 ? (totalOpex / totalRevenue) * 100 : 0,  color: '#ef4444', desc: 'Operating efficiency' },
+                  { label: 'Profit Retention', value: totalRevenue > 0 ? (netIncome / totalRevenue) * 100 : 0,  color: netIncome >= 0 ? '#10b981' : '#ef4444', desc: 'Net margin' },
                 ].map((m) => (
                   <div key={m.label} style={{ background:'rgba(255,255,255,0.025)', border:'1px solid rgba(99,102,241,0.08)', borderRadius:14, padding:'16px 18px' }}>
                     <div style={{ fontSize:11, fontWeight:700, letterSpacing:'0.06em', textTransform:'uppercase', color:'rgba(255,255,255,0.3)', marginBottom:8 }}>{m.label}</div>

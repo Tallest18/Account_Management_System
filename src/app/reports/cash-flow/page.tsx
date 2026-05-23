@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { AuthGuard } from '@/components/auth/AuthGuard';
 import { useAuth } from '@/context/AuthContext';
 import { getAccounts } from '@/lib/db';
@@ -25,24 +25,27 @@ interface CashSection {
 }
 
 /* ─────────────────────────────────────────
-   WATERFALL BAR
+   BAR — declared at module scope so it is
+   never re-created during render, satisfying
+   react-hooks/static-components.
+   maxAbs and scale are passed as plain props
+   instead of closing over the parent's locals.
 ───────────────────────────────────────── */
-function WaterfallBar({
-  operating, investing, financing, netChange, openingBalance
+function Bar({
+  value, color, label, maxAbs,
 }: {
-  operating: number; investing: number; financing: number;
-  netChange: number; openingBalance: number;
+  value: number; color: string; label: string; maxAbs: number;
 }) {
-  const maxAbs = Math.max(Math.abs(operating), Math.abs(investing), Math.abs(financing), Math.abs(netChange), 1);
-  const scale = (v: number) => Math.round((Math.abs(v) / maxAbs) * 100);
-
-  const Bar = ({ value, color, label }: { value: number; color: string; label: string }) => (
+  const pct = Math.round((Math.abs(value) / Math.max(maxAbs, 1)) * 100);
+  return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, flex: 1 }}>
-      <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)' }}>{label}</div>
+      <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)' }}>
+        {label}
+      </div>
       <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', height: 120, justifyContent: 'flex-end', position: 'relative' }}>
         {value !== 0 && (
           <div style={{
-            width: '60%', height: `${scale(value)}%`,
+            width: '60%', height: `${pct}%`,
             background: value >= 0 ? color : `${color}80`,
             borderRadius: value >= 0 ? '6px 6px 0 0' : '0 0 6px 6px',
             border: `1px solid ${color}50`,
@@ -64,21 +67,40 @@ function WaterfallBar({
             </div>
           </div>
         )}
-        {value === 0 && <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.2)', fontFamily: "'DM Mono',monospace" }}>—</div>}
+        {value === 0 && (
+          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.2)', fontFamily: "'DM Mono',monospace" }}>—</div>
+        )}
       </div>
       <div style={{ width: '100%', height: 1, background: 'rgba(255,255,255,0.08)' }} />
     </div>
   );
+}
+
+/* ─────────────────────────────────────────
+   WATERFALL BAR
+   openingBalance removed from props — it was
+   flagged as unused (@typescript-eslint/no-unused-vars).
+───────────────────────────────────────── */
+function WaterfallBar({
+  operating, investing, financing, netChange,
+}: {
+  operating: number; investing: number; financing: number; netChange: number;
+}) {
+  const maxAbs = Math.max(
+    Math.abs(operating), Math.abs(investing),
+    Math.abs(financing), Math.abs(netChange),
+    1,
+  );
 
   return (
     <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end', padding: '32px 24px 16px' }}>
-      <Bar value={operating}  color="#3dba7e" label="Operating" />
+      <Bar value={operating} color="#3dba7e" label="Operating" maxAbs={maxAbs} />
       <div style={{ display: 'flex', alignItems: 'flex-end', padding: '0 0 8px', color: 'rgba(255,255,255,0.15)', fontSize: 18 }}>+</div>
-      <Bar value={investing}  color="#4a90d9" label="Investing" />
+      <Bar value={investing} color="#4a90d9" label="Investing" maxAbs={maxAbs} />
       <div style={{ display: 'flex', alignItems: 'flex-end', padding: '0 0 8px', color: 'rgba(255,255,255,0.15)', fontSize: 18 }}>+</div>
-      <Bar value={financing}  color="#c3a26e" label="Financing" />
+      <Bar value={financing} color="#c3a26e" label="Financing" maxAbs={maxAbs} />
       <div style={{ display: 'flex', alignItems: 'flex-end', padding: '0 0 8px', color: 'rgba(255,255,255,0.15)', fontSize: 18 }}>=</div>
-      <Bar value={netChange}  color={netChange >= 0 ? '#3dba7e' : '#e24b4a'} label="Net Change" />
+      <Bar value={netChange} color={netChange >= 0 ? '#3dba7e' : '#e24b4a'} label="Net Change" maxAbs={maxAbs} />
     </div>
   );
 }
@@ -246,8 +268,14 @@ function KPICard({ label, value, currency, color, icon, sub }: {
 ═══════════════════════════════════════ */
 export default function CashFlowPage() {
   const { user, company } = useAuth();
-  const [accounts, setAccounts] = useState<Account[]>([]);
-  const [loading, setLoading] = useState(true);
+
+  // Single atomic state object — same pattern as the P&L page.
+  // Zero synchronous setState in any effect body.
+  const [{ accounts, loading }, setData] = useState<{
+    accounts: Account[];
+    loading: boolean;
+  }>({ accounts: [], loading: true });
+
   const [refreshing, setRefreshing] = useState(false);
   const [period, setPeriod] = useState<'month' | 'quarter' | 'year'>('month');
 
@@ -259,18 +287,26 @@ export default function CashFlowPage() {
     ? `Q${Math.ceil((today.getMonth() + 1) / 3)} ${today.getFullYear()}`
     : `FY ${today.getFullYear()}`;
 
-  const load = useCallback(async (isRefresh = false) => {
-    if (!user) return;
-    isRefresh ? setRefreshing(true) : setLoading(true);
-    try {
-      const accts = await getAccounts(user.companyId);
-      setAccounts(accts);
-    } finally {
-      isRefresh ? setRefreshing(false) : setLoading(false);
-    }
-  }, [user]);
+  const companyId = user?.companyId;
 
-  useEffect(() => { load(); }, [load]);
+  // No synchronous setState in the effect body.
+  // The only setState is setData() inside .then() — async boundary, permitted.
+  useEffect(() => {
+    if (!companyId) return;
+    getAccounts(companyId).then((accts) => {
+      setData({ accounts: accts, loading: false });
+    });
+  }, [companyId]);
+
+  // Manual refresh — lives outside useEffect entirely.
+  function handleRefresh() {
+    if (!companyId) return;
+    setRefreshing(true);
+    getAccounts(companyId).then((accts) => {
+      setData({ accounts: accts, loading: false });
+      setRefreshing(false);
+    });
+  }
 
   /* ── Derive cash flow from chart of accounts balances ── */
   const revenue  = accounts.filter((a) => a.type === 'revenue');
@@ -280,10 +316,19 @@ export default function CashFlowPage() {
   const equity   = accounts.filter((a) => a.type === 'equity');
 
   // Operating
-  const netIncome    = sumBy(revenue, 'balance') - sumBy(expenses, 'balance');
-  const ar           = assets.filter((a) => a.category === 'accounts_receivable' || a.name?.toLowerCase().includes('receivable'));
-  const ap           = liab.filter((a) => a.category === 'accounts_payable'    || a.name?.toLowerCase().includes('payable'));
-  const depAccounts  = assets.filter((a) => a.name?.toLowerCase().includes('depreciation') || a.name?.toLowerCase().includes('amortiz'));
+  const netIncome   = sumBy(revenue, 'balance') - sumBy(expenses, 'balance');
+
+  // Cast a.category to string to avoid TS2367 — AccountCategory union may not
+  // include these working-capital strings, but the runtime check is intentional.
+  const ar = assets.filter(
+    (a) => (a.category as string) === 'accounts_receivable' || a.name?.toLowerCase().includes('receivable'),
+  );
+  const ap = liab.filter(
+    (a) => (a.category as string) === 'accounts_payable' || a.name?.toLowerCase().includes('payable'),
+  );
+  const depAccounts  = assets.filter((a) =>
+    a.name?.toLowerCase().includes('depreciation') || a.name?.toLowerCase().includes('amortiz'),
+  );
   const depreciation = Math.abs(sumBy(depAccounts, 'balance'));
   const arChange     = -sumBy(ar, 'balance');
   const apChange     = sumBy(ap, 'balance');
@@ -294,37 +339,51 @@ export default function CashFlowPage() {
     ...(arChange !== 0 ? [{ name: 'Change in Accounts Receivable', amount: arChange, indent: true }] : []),
     ...(apChange !== 0 ? [{ name: 'Change in Accounts Payable',    amount: apChange, indent: true }] : []),
     ...expenses
-      .filter((a) => a.category === 'payroll' || a.name?.toLowerCase().includes('payroll') || a.name?.toLowerCase().includes('salary'))
+      .filter((a) =>
+        (a.category as string) === 'payroll' ||
+        a.name?.toLowerCase().includes('payroll') ||
+        a.name?.toLowerCase().includes('salary'),
+      )
       .map((a) => ({ name: `Accrued: ${a.name}`, amount: -a.balance, indent: true })),
   ];
   const totalOperating = operatingItems.reduce((s, i) => s + i.amount, 0);
 
   // Investing
   const fixedAssetAccts = assets.filter((a) =>
-    a.category === 'fixed_asset' ||
+    (a.category as string) === 'fixed_asset' ||
     a.name?.toLowerCase().includes('equipment') ||
     a.name?.toLowerCase().includes('property') ||
-    a.name?.toLowerCase().includes('vehicle')
+    a.name?.toLowerCase().includes('vehicle'),
   );
   const investingItems = fixedAssetAccts.map((a) => ({ name: `Purchase: ${a.name}`, amount: -Math.abs(a.balance) }));
-  const totalInvesting = investingItems.reduce((s, i) => s + i.amount, 0);
+  const totalInvesting  = investingItems.reduce((s, i) => s + i.amount, 0);
 
   // Financing
-  const loans    = liab.filter((a) => a.category === 'long_term_liability' || a.name?.toLowerCase().includes('loan') || a.name?.toLowerCase().includes('mortgage') || a.name?.toLowerCase().includes('note'));
+  const loans    = liab.filter((a) =>
+    (a.category as string) === 'long_term_liability' ||
+    a.name?.toLowerCase().includes('loan') ||
+    a.name?.toLowerCase().includes('mortgage') ||
+    a.name?.toLowerCase().includes('note'),
+  );
   const equityIn = equity.filter((a) => a.balance > 0);
-  const divs     = equity.filter((a) => a.name?.toLowerCase().includes('dividend') || a.name?.toLowerCase().includes('distribution'));
+  const divs     = equity.filter((a) =>
+    a.name?.toLowerCase().includes('dividend') || a.name?.toLowerCase().includes('distribution'),
+  );
 
   const financingItems = [
-    ...loans.map((a)    => ({ name: `Proceeds: ${a.name}`,          amount:  a.balance })),
-    ...equityIn.map((a) => ({ name: `Capital: ${a.name}`,           amount:  a.balance })),
-    ...divs.map((a)     => ({ name: `Dividends Paid: ${a.name}`,    amount: -Math.abs(a.balance) })),
+    ...loans.map((a)    => ({ name: `Proceeds: ${a.name}`,       amount:  a.balance })),
+    ...equityIn.map((a) => ({ name: `Capital: ${a.name}`,        amount:  a.balance })),
+    ...divs.map((a)     => ({ name: `Dividends Paid: ${a.name}`, amount: -Math.abs(a.balance) })),
   ];
   const totalFinancing = financingItems.reduce((s, i) => s + i.amount, 0);
 
   const netCashChange = totalOperating + totalInvesting + totalFinancing;
-  const cashAccounts  = assets.filter((a) => a.category === 'current_asset' && (a.name?.toLowerCase().includes('cash') || a.name?.toLowerCase().includes('bank')));
-  const closingCash   = sumBy(cashAccounts, 'balance');
-  const openingCash   = Math.max(0, closingCash - netCashChange);
+  const cashAccounts  = assets.filter((a) =>
+    (a.category as string) === 'current_asset' &&
+    (a.name?.toLowerCase().includes('cash') || a.name?.toLowerCase().includes('bank')),
+  );
+  const closingCash = sumBy(cashAccounts, 'balance');
+  const openingCash = Math.max(0, closingCash - netCashChange);
 
   const sections: CashSection[] = [
     {
@@ -420,7 +479,7 @@ export default function CashFlowPage() {
               </div>
 
               <button
-                onClick={() => load(true)}
+                onClick={handleRefresh}
                 style={{ background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.1)', borderRadius:12, padding:'9px 16px', fontSize:13, fontWeight:500, color:'rgba(255,255,255,0.7)', cursor:'pointer', display:'flex', alignItems:'center', gap:7, fontFamily:"'Outfit',sans-serif", transition:'all 0.15s' }}
                 onMouseEnter={(e) => { e.currentTarget.style.background='rgba(255,255,255,0.1)'; e.currentTarget.style.color='#fff'; }}
                 onMouseLeave={(e) => { e.currentTarget.style.background='rgba(255,255,255,0.06)'; e.currentTarget.style.color='rgba(255,255,255,0.7)'; }}
@@ -476,7 +535,12 @@ export default function CashFlowPage() {
                 <span style={{ fontSize:12, fontWeight:700, letterSpacing:'0.07em', textTransform:'uppercase', color:'rgba(255,255,255,0.35)' }}>Cash Flow Breakdown</span>
                 <span style={{ fontSize:11, color:'rgba(255,255,255,0.2)', display:'flex', alignItems:'center', gap:5 }}><Info size={11} /> Indirect method</span>
               </div>
-              <WaterfallBar operating={totalOperating} investing={totalInvesting} financing={totalFinancing} netChange={netCashChange} openingBalance={openingCash} />
+              <WaterfallBar
+                operating={totalOperating}
+                investing={totalInvesting}
+                financing={totalFinancing}
+                netChange={netCashChange}
+              />
             </div>
 
             {/* ── Sections ── */}
