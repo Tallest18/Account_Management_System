@@ -23,7 +23,7 @@ const statusColor: Record<string, 'green' | 'yellow' | 'red' | 'default'> = {
   draft: 'default', sent: 'default', partial: 'yellow',
   voided: 'red', overdue: 'red',
 };
-const CHART_COLORS = ['#f59e0b', '#6366f1', '#10b981', '#ec4899', '#8b5cf6'];
+const CHART_COLORS = ['#818cf8', '#6366f1', '#a78bfa', '#4f46e5', '#7c3aed'];
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
 
 /* ─── helpers ────────────────────────────────────────── */
@@ -91,7 +91,7 @@ function CustomTooltip({ active, payload, label }: {
 }) {
   if (!active || !payload?.length) return null;
   return (
-    <div style={{ background: 'rgba(10,10,15,0.95)', border: '1px solid rgba(245,158,11,0.2)', borderRadius: '12px', padding: '12px 16px', backdropFilter: 'blur(20px)', boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }}>
+    <div style={{ background: 'rgba(10,10,15,0.95)', border: '1px solid rgba(99,102,241,0.25)', borderRadius: '12px', padding: '12px 16px', backdropFilter: 'blur(20px)', boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }}>
       <p style={{ color: '#6b7280', fontSize: '11px', marginBottom: '8px', fontFamily: 'monospace', letterSpacing: '0.05em' }}>{label}</p>
       {payload.map((p) => (
         <div key={p.name} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
@@ -127,7 +127,7 @@ function KpiCard({ label, value, change, accent, icon, currency, isCount, delay 
       background: 'linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%)',
       backdropFilter: 'blur(20px)', padding: '20px', overflow: 'hidden', cursor: 'default',
     }}
-      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.12)'; (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)'; }}
+      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(129,140,248,0.2)'; (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)'; }}
       onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.07)'; (e.currentTarget as HTMLElement).style.transform = 'translateY(0)'; }}
     >
       <div style={{ position: 'absolute', top: '-40px', right: '-40px', width: '120px', height: '120px', borderRadius: '50%', background: accent, opacity: 0.08, filter: 'blur(40px)', pointerEvents: 'none' }} />
@@ -159,8 +159,9 @@ function SectionLabel({ children, sub }: { children: React.ReactNode; sub?: stri
   return (
     <div style={{ marginBottom: '16px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-        <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: '#f59e0b' }}>{children}</span>
-        <div style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, rgba(245,158,11,0.3), transparent)' }} />
+        {/* Changed from amber #f59e0b to indigo #6366f1 */}
+        <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: '#818cf8' }}>{children}</span>
+        <div style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, rgba(99,102,241,0.4), transparent)' }} />
       </div>
       {sub && <p style={{ fontSize: '12px', color: '#4b5563', marginTop: '4px' }}>{sub}</p>}
     </div>
@@ -174,7 +175,7 @@ function GlassCard({ title, subtitle, action, children, padding = true }: {
 }) {
   return (
     <div style={{ borderRadius: '20px', border: '1px solid rgba(255,255,255,0.07)', background: 'linear-gradient(135deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%)', backdropFilter: 'blur(20px)', overflow: 'hidden', position: 'relative' }}>
-      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '1px', background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent)', pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '1px', background: 'linear-gradient(90deg, transparent, rgba(129,140,248,0.15), transparent)', pointerEvents: 'none' }} />
       {title && (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
           <div>
@@ -193,9 +194,10 @@ function GlassCard({ title, subtitle, action, children, padding = true }: {
 function AmbientOrbs() {
   return (
     <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0, overflow: 'hidden' }}>
-      <div style={{ position: 'absolute', top: '-20%', left: '-10%', width: '600px', height: '600px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(245,158,11,0.06) 0%, transparent 70%)', animation: 'orbFloat1 20s ease-in-out infinite' }} />
-      <div style={{ position: 'absolute', top: '30%', right: '-15%', width: '500px', height: '500px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(99,102,241,0.05) 0%, transparent 70%)', animation: 'orbFloat2 25s ease-in-out infinite' }} />
-      <div style={{ position: 'absolute', bottom: '-10%', left: '30%', width: '400px', height: '400px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(16,185,129,0.04) 0%, transparent 70%)', animation: 'orbFloat3 18s ease-in-out infinite' }} />
+      {/* Changed from amber/indigo/emerald to indigo/violet/purple palette */}
+      <div style={{ position: 'absolute', top: '-20%', left: '-10%', width: '600px', height: '600px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(79,70,229,0.10) 0%, transparent 70%)', animation: 'orbFloat1 20s ease-in-out infinite' }} />
+      <div style={{ position: 'absolute', top: '30%', right: '-15%', width: '500px', height: '500px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(124,58,237,0.08) 0%, transparent 70%)', animation: 'orbFloat2 25s ease-in-out infinite' }} />
+      <div style={{ position: 'absolute', bottom: '-10%', left: '30%', width: '400px', height: '400px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(99,102,241,0.07) 0%, transparent 70%)', animation: 'orbFloat3 18s ease-in-out infinite' }} />
     </div>
   );
 }
@@ -245,7 +247,6 @@ export default function DashboardPage() {
   const [visible,  setVisible]  = useState(false);
   const width = useWindowWidth();
 
-  // Responsive breakpoints
   const isMobile  = width < 640;
   const isTablet  = width >= 640 && width < 1024;
   const isDesktop = width >= 1024;
@@ -296,20 +297,20 @@ export default function DashboardPage() {
   const postedCount    = entries.filter(e => e.status === 'posted').length;
   const margin         = revenue > 0 ? (netIncome / revenue) * 100 : 0;
 
-  /* ── KPI grid columns based on screen size ── */
-  const kpiCols = isMobile ? 'repeat(2, 1fr)' : isTablet ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)';
+  const kpiCols   = isMobile ? 'repeat(2, 1fr)' : isTablet ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)';
   const chartCols = isDesktop ? '2fr 1fr' : '1fr';
   const tableCols = isDesktop ? '1fr 1fr' : '1fr';
-  const padding = isMobile ? '16px 16px 40px' : isTablet ? '24px 24px 40px' : '28px 28px 48px';
+  const padding   = isMobile ? '16px 16px 40px' : isTablet ? '24px 24px 40px' : '28px 28px 48px';
 
   /* ── loading ── */
   if (loading) return (
     <AuthGuard>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', flexDirection: 'column', gap: '20px' }}>
         <div style={{ position: 'relative', width: '56px', height: '56px' }}>
-          <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: '2px solid rgba(245,158,11,0.15)' }} />
-          <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: '2px solid transparent', borderTopColor: '#f59e0b', animation: 'spin 0.8s linear infinite' }} />
-          <div style={{ position: 'absolute', inset: '8px', borderRadius: '50%', border: '2px solid transparent', borderTopColor: 'rgba(245,158,11,0.4)', animation: 'spin 1.4s linear infinite reverse' }} />
+          <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: '2px solid rgba(99,102,241,0.15)' }} />
+          {/* Spinner: amber → indigo */}
+          <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: '2px solid transparent', borderTopColor: '#6366f1', animation: 'spin 0.8s linear infinite' }} />
+          <div style={{ position: 'absolute', inset: '8px', borderRadius: '50%', border: '2px solid transparent', borderTopColor: 'rgba(99,102,241,0.4)', animation: 'spin 1.4s linear infinite reverse' }} />
         </div>
         <p style={{ fontSize: '13px', color: '#4b5563', letterSpacing: '0.05em' }}>Preparing your workspace…</p>
       </div>
@@ -326,7 +327,8 @@ export default function DashboardPage() {
           </div>
           <h2 style={{ fontSize: '16px', fontWeight: 600, color: '#f9fafb', marginBottom: '8px' }}>Access Restricted</h2>
           <p style={{ fontSize: '13px', color: '#6b7280', marginBottom: '20px', lineHeight: 1.6 }}>Your account doesn&apos;t have permission to read this company&apos;s data.</p>
-          <button onClick={() => window.location.reload()} style={{ padding: '10px 20px', borderRadius: '12px', background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.2)', color: '#f59e0b', fontSize: '13px', fontWeight: 500, cursor: 'pointer' }}>Try again</button>
+          {/* Retry button: amber → indigo */}
+          <button onClick={() => window.location.reload()} style={{ padding: '10px 20px', borderRadius: '12px', background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.25)', color: '#818cf8', fontSize: '13px', fontWeight: 500, cursor: 'pointer' }}>Try again</button>
         </div>
       </div>
     </AuthGuard>
@@ -336,8 +338,8 @@ export default function DashboardPage() {
     <AuthGuard>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', padding: '24px' }}>
         <div style={{ maxWidth: '400px', textAlign: 'center' }}>
-          <div style={{ width: '64px', height: '64px', borderRadius: '20px', background: 'rgba(245,158,11,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-            <AlertCircle style={{ width: '28px', height: '28px', color: '#f59e0b' }} />
+          <div style={{ width: '64px', height: '64px', borderRadius: '20px', background: 'rgba(99,102,241,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+            <AlertCircle style={{ width: '28px', height: '28px', color: '#6366f1' }} />
           </div>
           <h2 style={{ fontSize: '16px', fontWeight: 600, color: '#f9fafb', marginBottom: '8px' }}>Something went wrong</h2>
           <p style={{ fontSize: '12px', color: '#6b7280', fontFamily: 'monospace' }}>{error}</p>
@@ -346,17 +348,21 @@ export default function DashboardPage() {
     </AuthGuard>
   );
 
+  /* ── KPI definitions — accent colours updated to indigo/violet palette ── */
   const kpi1 = [
     { label: 'Total Revenue',  value: revenue,   change: 12.4, accent: '#10b981', icon: <TrendingUp  style={{ width: '16px', height: '16px' }} />, currency: cur },
     { label: 'Total Expenses', value: expenses,  change: -3.1, accent: '#ef4444', icon: <TrendingDown style={{ width: '16px', height: '16px' }} />, currency: cur },
     { label: 'Net Income',     value: netIncome, change: 8.7,  accent: netIncome >= 0 ? '#6366f1' : '#ef4444', icon: <DollarSign style={{ width: '16px', height: '16px' }} />, currency: cur },
-    { label: 'Cash Balance',   value: cash,      change: 2.2,  accent: '#f59e0b', icon: <Wallet style={{ width: '16px', height: '16px' }} />, currency: cur },
+    // Cash balance: was amber #f59e0b → indigo #818cf8
+    { label: 'Cash Balance',   value: cash,      change: 2.2,  accent: '#818cf8', icon: <Wallet style={{ width: '16px', height: '16px' }} />, currency: cur },
   ];
   const kpi2 = [
-    { label: 'Accounts Receivable', value: ar,                    accent: '#f59e0b', icon: <Users        style={{ width: '16px', height: '16px' }} />, currency: cur },
+    // AR: was amber → indigo
+    { label: 'Accounts Receivable', value: ar,                    accent: '#6366f1', icon: <Users        style={{ width: '16px', height: '16px' }} />, currency: cur },
     { label: 'Accounts Payable',    value: ap,                    accent: '#ef4444', icon: <AlertCircle  style={{ width: '16px', height: '16px' }} />, currency: cur },
     { label: 'Posted Entries',      value: postedCount,           accent: '#10b981', icon: <CheckCircle  style={{ width: '16px', height: '16px' }} />, isCount: true },
-    { label: 'Open Invoices',       value: unpaidInvoices.length, accent: '#8b5cf6', icon: <Clock        style={{ width: '16px', height: '16px' }} />, isCount: true },
+    // Open invoices: was violet (already close) — keeping #8b5cf6 as is (violet, part of indigo family)
+    { label: 'Open Invoices',       value: unpaidInvoices.length, accent: '#a78bfa', icon: <Clock        style={{ width: '16px', height: '16px' }} />, isCount: true },
   ];
 
   return (
@@ -386,8 +392,9 @@ export default function DashboardPage() {
         }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
-              <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: 'linear-gradient(135deg, #f59e0b, #d97706)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 20px rgba(245,158,11,0.3)' }}>
-                <Sparkles style={{ width: '16px', height: '16px', color: '#000' }} />
+              {/* Header icon: amber gradient → indigo/violet gradient matching login page */}
+              <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: 'linear-gradient(135deg, #4f46e5, #7c3aed)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 20px rgba(99,102,241,0.4)' }}>
+                <Sparkles style={{ width: '16px', height: '16px', color: '#fff' }} />
               </div>
               <h1 style={{ fontSize: isMobile ? '18px' : '22px', fontWeight: 700, color: '#f9fafb', letterSpacing: '-0.03em' }}>
                 {user?.displayName?.split(' ')[0]}&apos;s Dashboard
@@ -400,16 +407,17 @@ export default function DashboardPage() {
             </p>
           </div>
 
-          {/* Health rings — hide on mobile to save space */}
+          {/* Health rings */}
           {!isMobile && (
             <div style={{
               display: 'flex', gap: isTablet ? '16px' : '24px', alignItems: 'center',
               padding: '16px 20px', borderRadius: '16px',
-              border: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.02)',
+              border: '1px solid rgba(99,102,241,0.12)', background: 'rgba(99,102,241,0.04)',
             }}>
+              {/* Ring colours: emerald, indigo, indigo-light */}
               <MetricRing value={revenue}               max={Math.max(revenue, 1)}           color="#10b981" label="Revenue"   />
               <MetricRing value={postedCount}           max={Math.max(entries.length, 1)}    color="#6366f1" label="Posted"    />
-              <MetricRing value={unpaidInvoices.length} max={Math.max(invoices.length, 1)}   color="#f59e0b" label="Open inv." />
+              <MetricRing value={unpaidInvoices.length} max={Math.max(invoices.length, 1)}   color="#818cf8" label="Open inv." />
             </div>
           )}
         </div>
@@ -481,12 +489,13 @@ export default function DashboardPage() {
                       ))}
                     </Pie>
                     <Tooltip formatter={(value) => [formatCurrency(Number(value ?? 0)), ''] as [string, string]}
-                      contentStyle={{ background: 'rgba(10,10,15,0.95)', border: '1px solid rgba(245,158,11,0.2)', borderRadius: '10px', fontSize: '12px' }} />
+                      contentStyle={{ background: 'rgba(10,10,15,0.95)', border: '1px solid rgba(99,102,241,0.25)', borderRadius: '10px', fontSize: '12px' }} />
                     <Legend iconType="circle" iconSize={6} wrapperStyle={{ fontSize: '11px', color: '#4b5563' }} />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
-              <div style={{ marginTop: '8px', padding: '10px 14px', borderRadius: '12px', background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.12)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              {/* Net margin badge: amber → indigo */}
+              <div style={{ marginTop: '8px', padding: '10px 14px', borderRadius: '12px', background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.15)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: '11px', color: '#6b7280' }}>Net margin</span>
                 <span style={{ fontSize: '13px', fontWeight: 700, color: margin >= 0 ? '#10b981' : '#ef4444', fontFamily: 'monospace' }}>{margin.toFixed(1)}%</span>
               </div>
@@ -495,10 +504,11 @@ export default function DashboardPage() {
 
           {/* ── Tables ── */}
           <div style={{ display: 'grid', gridTemplateColumns: tableCols, gap: '14px' }}>
+
             {/* Recent Journal Entries */}
             <GlassCard
               title="Recent Journal Entries"
-              action={<Link href="/journal" style={{ fontSize: '11px', color: '#f59e0b', textDecoration: 'none', padding: '4px 10px', borderRadius: '8px', border: '1px solid rgba(245,158,11,0.2)', background: 'rgba(245,158,11,0.05)' }}>View all →</Link>}
+              action={<Link href="/journal" style={{ fontSize: '11px', color: '#818cf8', textDecoration: 'none', padding: '4px 10px', borderRadius: '8px', border: '1px solid rgba(99,102,241,0.25)', background: 'rgba(99,102,241,0.07)' }}>View all →</Link>}
               padding={false}
             >
               <div style={{ overflowX: 'auto' }}>
@@ -520,10 +530,11 @@ export default function DashboardPage() {
                       </td></tr>
                     ) : recentEntries.map((e, idx) => (
                       <tr key={e.id} style={{ borderBottom: idx < recentEntries.length - 1 ? '1px solid rgba(255,255,255,0.03)' : 'none', transition: 'background 0.15s' }}
-                        onMouseEnter={el => (el.currentTarget.style.background = 'rgba(255,255,255,0.02)')}
+                        onMouseEnter={el => (el.currentTarget.style.background = 'rgba(99,102,241,0.04)')}
                         onMouseLeave={el => (el.currentTarget.style.background = 'transparent')}
                       >
-                        <td style={{ padding: '11px 16px', fontFamily: 'monospace', color: '#f59e0b', fontSize: '11px' }}>{e.entryNumber}</td>
+                        {/* Entry number: amber → indigo */}
+                        <td style={{ padding: '11px 16px', fontFamily: 'monospace', color: '#818cf8', fontSize: '11px' }}>{e.entryNumber}</td>
                         {!isMobile && <td style={{ padding: '11px 16px', color: '#4b5563', fontSize: '11px', whiteSpace: 'nowrap' }}>{formatDate(e.date)}</td>}
                         {!isMobile && <td style={{ padding: '11px 16px', color: '#9ca3af', maxWidth: '150px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.description}</td>}
                         <td style={{ padding: '11px 16px', fontFamily: 'monospace', color: '#e5e7eb', fontSize: '12px', fontWeight: 600 }}>{formatCurrency(e.totalDebit)}</td>
@@ -538,7 +549,7 @@ export default function DashboardPage() {
             {/* Open Invoices */}
             <GlassCard
               title="Open Invoices"
-              action={<Link href="/invoices/sales" style={{ fontSize: '11px', color: '#f59e0b', textDecoration: 'none', padding: '4px 10px', borderRadius: '8px', border: '1px solid rgba(245,158,11,0.2)', background: 'rgba(245,158,11,0.05)' }}>View all →</Link>}
+              action={<Link href="/invoices/sales" style={{ fontSize: '11px', color: '#818cf8', textDecoration: 'none', padding: '4px 10px', borderRadius: '8px', border: '1px solid rgba(99,102,241,0.25)', background: 'rgba(99,102,241,0.07)' }}>View all →</Link>}
               padding={false}
             >
               <div style={{ overflowX: 'auto' }}>
@@ -560,10 +571,11 @@ export default function DashboardPage() {
                       </td></tr>
                     ) : unpaidInvoices.map((inv, idx) => (
                       <tr key={inv.id} style={{ borderBottom: idx < unpaidInvoices.length - 1 ? '1px solid rgba(255,255,255,0.03)' : 'none', transition: 'background 0.15s' }}
-                        onMouseEnter={el => (el.currentTarget.style.background = 'rgba(255,255,255,0.02)')}
+                        onMouseEnter={el => (el.currentTarget.style.background = 'rgba(99,102,241,0.04)')}
                         onMouseLeave={el => (el.currentTarget.style.background = 'transparent')}
                       >
-                        <td style={{ padding: '11px 16px', fontFamily: 'monospace', color: '#f59e0b', fontSize: '11px' }}>{inv.invoiceNumber}</td>
+                        {/* Invoice number: amber → indigo */}
+                        <td style={{ padding: '11px 16px', fontFamily: 'monospace', color: '#818cf8', fontSize: '11px' }}>{inv.invoiceNumber}</td>
                         {!isMobile && <td style={{ padding: '11px 16px', color: '#9ca3af', maxWidth: '100px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{inv.contactName}</td>}
                         {!isMobile && <td style={{ padding: '11px 16px', color: '#4b5563', fontSize: '11px', whiteSpace: 'nowrap' }}>{formatDate(inv.dueDate)}</td>}
                         <td style={{ padding: '11px 16px', fontFamily: 'monospace', color: '#e5e7eb', fontSize: '12px', fontWeight: 600 }}>{formatCurrency(inv.balance)}</td>
