@@ -34,7 +34,7 @@ function ParticleCanvas() {
         if (d.y < 0) d.y = H; if (d.y > H) d.y = 0;
         ctx.beginPath();
         ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(148,163,255,${d.o})`;
+        ctx.fillStyle = `rgba(245,158,11,${d.o})`;
         ctx.fill();
       }
       for (let i = 0; i < dots.length; i++) {
@@ -45,7 +45,7 @@ function ParticleCanvas() {
             ctx.beginPath();
             ctx.moveTo(dots[i].x, dots[i].y);
             ctx.lineTo(dots[j].x, dots[j].y);
-            ctx.strokeStyle = `rgba(148,163,255,${0.065 * (1 - dist / 100)})`;
+            ctx.strokeStyle = `rgba(245,158,11,${0.065 * (1 - dist / 100)})`;
             ctx.lineWidth = 0.5;
             ctx.stroke();
           }
@@ -175,9 +175,9 @@ export default function RegisterPage() {
 
         /* ambient orbs */
         .orb { position: fixed; border-radius: 50%; filter: blur(90px); pointer-events: none; z-index: 0; }
-        .orb-1 { width: 500px; height: 500px; background: rgba(79,70,229,0.16); top: -160px; right: -80px; }
-        .orb-2 { width: 380px; height: 380px; background: rgba(139,92,246,0.11); bottom: -100px; left: 40px; }
-        .orb-3 { width: 260px; height: 260px; background: rgba(59,130,246,0.09); top: 45%; left: 50%; transform: translate(-50%,-50%); }
+        .orb-1 { width: 500px; height: 500px; background: rgba(245,158,11,0.13); top: -160px; right: -80px; }
+        .orb-2 { width: 380px; height: 380px; background: rgba(217,119,6,0.09); bottom: -100px; left: 40px; }
+        .orb-3 { width: 260px; height: 260px; background: rgba(251,191,36,0.07); top: 45%; left: 50%; transform: translate(-50%,-50%); }
 
         /* ── wrap ── */
         .rg-wrap {
@@ -195,10 +195,10 @@ export default function RegisterPage() {
         .rg-header { text-align: center; margin-bottom: 32px; }
         .rg-logo-icon {
           width: 52px; height: 52px; border-radius: 16px;
-          background: linear-gradient(135deg, #4f46e5, #7c3aed);
+          background: linear-gradient(135deg, #f59e0b, #d97706);
           display: flex; align-items: center; justify-content: center;
           margin: 0 auto 16px;
-          box-shadow: 0 0 36px rgba(99,102,241,0.45);
+          box-shadow: 0 0 36px rgba(245,158,11,0.40);
         }
         .rg-header h1 {
           font-family: 'DM Serif Display', serif;
@@ -209,7 +209,7 @@ export default function RegisterPage() {
         }
         .rg-header h1 em {
           font-style: italic;
-          background: linear-gradient(135deg, #818cf8, #a78bfa);
+          background: linear-gradient(135deg, #f59e0b, #fbbf24);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
           background-clip: text;
@@ -231,21 +231,21 @@ export default function RegisterPage() {
           position: relative;
         }
         .rg-step-bubble.done {
-          background: linear-gradient(135deg, #4f46e5, #7c3aed);
-          box-shadow: 0 0 16px rgba(99,102,241,0.45);
-          color: white;
+          background: linear-gradient(135deg, #f59e0b, #d97706);
+          box-shadow: 0 0 16px rgba(245,158,11,0.40);
+          color: #1a0f00;
         }
         .rg-step-bubble.active {
-          background: linear-gradient(135deg, #4f46e5, #7c3aed);
-          box-shadow: 0 0 20px rgba(99,102,241,0.5);
-          color: white;
+          background: linear-gradient(135deg, #f59e0b, #d97706);
+          box-shadow: 0 0 20px rgba(245,158,11,0.45);
+          color: #1a0f00;
         }
         .rg-step-bubble.active::after {
           content: '';
           position: absolute;
           inset: -4px;
           border-radius: 50%;
-          border: 1.5px solid rgba(129,140,248,0.35);
+          border: 1.5px solid rgba(245,158,11,0.35);
           animation: pulse-ring 1.8s ease-in-out infinite;
         }
         @keyframes pulse-ring {
@@ -261,7 +261,7 @@ export default function RegisterPage() {
           font-size: 12px; font-weight: 500;
           transition: color 0.3s;
         }
-        .rg-step-label.active { color: #c4b5fd; }
+        .rg-step-label.active { color: #fbbf24; }
         .rg-step-label.done { color: rgba(200,200,230,0.55); }
         .rg-step-label.idle { color: rgba(200,200,230,0.25); }
         .rg-step-connector {
@@ -273,7 +273,7 @@ export default function RegisterPage() {
           content: '';
           position: absolute;
           inset: 0;
-          background: linear-gradient(90deg, #4f46e5, #7c3aed);
+          background: linear-gradient(90deg, #f59e0b, #d97706);
           transform-origin: left;
           transform: scaleX(0);
           transition: transform 0.5s cubic-bezier(.22,1,.36,1);
@@ -295,7 +295,7 @@ export default function RegisterPage() {
           position: absolute;
           top: 0; left: 0; right: 0;
           height: 1px;
-          background: linear-gradient(90deg, transparent, rgba(129,140,248,0.4), transparent);
+          background: linear-gradient(90deg, transparent, rgba(245,158,11,0.4), transparent);
         }
 
         /* step content animation */
@@ -314,7 +314,7 @@ export default function RegisterPage() {
         }
         .rg-section-icon {
           width: 34px; height: 34px; border-radius: 10px;
-          background: rgba(99,102,241,0.16);
+          background: rgba(245,158,11,0.14);
           display: flex; align-items: center; justify-content: center;
           flex-shrink: 0;
         }
@@ -346,9 +346,9 @@ export default function RegisterPage() {
           position: relative; overflow: hidden;
         }
         .rg-input-wrap:focus-within {
-          border-color: rgba(129,140,248,0.55);
-          background: rgba(99,102,241,0.055);
-          box-shadow: 0 0 0 3px rgba(99,102,241,0.11);
+          border-color: rgba(245,158,11,0.60);
+          background: rgba(245,158,11,0.05);
+          box-shadow: 0 0 0 3px rgba(245,158,11,0.11);
         }
         .rg-input-wrap input,
         .rg-input-wrap select {
@@ -409,21 +409,21 @@ export default function RegisterPage() {
           font-size: 14px; font-weight: 700;
           font-family: 'DM Sans', sans-serif;
           letter-spacing: 0.03em;
-          color: #fff;
+          color: #1a0f00;
           cursor: pointer;
-          background: linear-gradient(135deg, #4f46e5, #7c3aed);
-          box-shadow: 0 6px 28px rgba(99,102,241,0.36), inset 0 1px 0 rgba(255,255,255,0.15);
+          background: linear-gradient(135deg, #f59e0b, #d97706);
+          box-shadow: 0 6px 28px rgba(245,158,11,0.36), inset 0 1px 0 rgba(255,255,255,0.20);
           display: flex; align-items: center; justify-content: center; gap: 8px;
           transition: transform 0.18s, box-shadow 0.18s, opacity 0.18s;
           position: relative; overflow: hidden;
         }
         .rg-btn-primary::before {
           content: ''; position: absolute; inset: 0;
-          background: linear-gradient(135deg, rgba(255,255,255,0.12), transparent);
+          background: linear-gradient(135deg, rgba(255,255,255,0.18), transparent);
           opacity: 0; transition: opacity 0.25s;
         }
         .rg-btn-primary:hover:not(:disabled)::before { opacity: 1; }
-        .rg-btn-primary:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 10px 36px rgba(99,102,241,0.44), inset 0 1px 0 rgba(255,255,255,0.15); }
+        .rg-btn-primary:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 10px 36px rgba(245,158,11,0.46), inset 0 1px 0 rgba(255,255,255,0.20); }
         .rg-btn-primary:active:not(:disabled) { transform: translateY(0); }
         .rg-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
         .spin { animation: spin 0.8s linear infinite; }
@@ -431,8 +431,8 @@ export default function RegisterPage() {
 
         /* ── footer ── */
         .rg-footer { text-align: center; margin-top: 22px; font-size: 13px; color: rgba(200,200,230,0.4); }
-        .rg-footer a { color: #818cf8; font-weight: 600; text-decoration: none; transition: color 0.2s; }
-        .rg-footer a:hover { color: #a5b4fc; }
+        .rg-footer a { color: #f59e0b; font-weight: 600; text-decoration: none; transition: color 0.2s; }
+        .rg-footer a:hover { color: #fbbf24; }
 
         /* ── terms note ── */
         .rg-terms {
@@ -440,8 +440,8 @@ export default function RegisterPage() {
           font-size: 11px; color: rgba(200,200,230,0.22);
           line-height: 1.6;
         }
-        .rg-terms a { color: rgba(129,140,248,0.5); text-decoration: none; }
-        .rg-terms a:hover { color: rgba(129,140,248,0.8); }
+        .rg-terms a { color: rgba(245,158,11,0.5); text-decoration: none; }
+        .rg-terms a:hover { color: rgba(245,158,11,0.8); }
 
         /* ── field stagger ── */
         .rg-field { animation: fieldIn 0.4s both; }
@@ -476,7 +476,7 @@ export default function RegisterPage() {
           {/* Header */}
           <div className="rg-header">
             <div className="rg-logo-icon">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1a0f00" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
                 <polyline points="9,22 9,12 15,12 15,22"/>
               </svg>
@@ -496,7 +496,7 @@ export default function RegisterPage() {
                 <div key={s.n} className="rg-step" style={{ flex: i < 1 ? '0 0 auto' : 1 }}>
                   <div className={`rg-step-bubble ${state}`}>
                     {state === 'done' ? (
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#1a0f00" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                         <polyline points="20 6 9 17 4 12" />
                       </svg>
                     ) : s.n}
@@ -530,7 +530,7 @@ export default function RegisterPage() {
                   <>
                     <div className="rg-section-head">
                       <div className="rg-section-icon">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
                         </svg>
                       </div>
@@ -577,7 +577,7 @@ export default function RegisterPage() {
                       <div className="rg-btn-row">
                         <button type="submit" className="rg-btn-primary">
                           Continue
-                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#1a0f00" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                             <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
                           </svg>
                         </button>
@@ -588,7 +588,7 @@ export default function RegisterPage() {
                   <>
                     <div className="rg-section-head">
                       <div className="rg-section-icon">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
                         </svg>
                       </div>
@@ -665,7 +665,7 @@ export default function RegisterPage() {
                         <button type="submit" className="rg-btn-primary" disabled={loading}>
                           {loading ? (
                             <>
-                              <svg className="spin" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                              <svg className="spin" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#1a0f00" strokeWidth="2.5">
                                 <path d="M21 12a9 9 0 11-6.219-8.56"/>
                               </svg>
                               Creating workspace…
@@ -673,7 +673,7 @@ export default function RegisterPage() {
                           ) : (
                             <>
                               Create Workspace
-                              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#1a0f00" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                 <polyline points="20 6 9 17 4 12"/>
                               </svg>
                             </>
@@ -705,7 +705,7 @@ export default function RegisterPage() {
 
 /* ── Inline helpers ── */
 function Req() {
-  return <span style={{ color: 'rgba(167,139,250,0.7)', marginLeft: 2 }}>*</span>;
+  return <span style={{ color: 'rgba(245,158,11,0.75)', marginLeft: 2 }}>*</span>;
 }
 function EyeOn() {
   return (
