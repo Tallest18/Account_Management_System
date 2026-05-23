@@ -1,208 +1,888 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { AuthGuard } from '@/components/auth/AuthGuard';
-import { PageHeader } from '@/components/layout/AppLayout';
-import { Button, Input, Select, Card, Badge } from '@/components/ui';
 import { useAuth } from '@/context/AuthContext';
 import { updateCompany, updateUser, getCompanyUsers } from '@/lib/db';
 import { User } from '@/types';
 import { formatDateTime } from '@/lib/utils';
-import { Settings, Building2, Lock, Users, Shield } from 'lucide-react';
+import { Building2, Lock, Users, Shield, ChevronRight, Check, Eye, EyeOff, AlertCircle } from 'lucide-react';
+
+/* ═══════════════════════════════════════════════════════════
+   CSS — fully self-contained, no external classes used
+═══════════════════════════════════════════════════════════ */
+const css = `
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Outfit:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+/* ── Tokens ───────────────────────────────────────────────── */
+.sg {
+  --bg:      #07070f;
+  --bg1:     #0c0c18;
+  --bg2:     #101020;
+  --bg3:     #161628;
+  --bg4:     #1c1c30;
+  --border:  rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.13);
+  --border3: rgba(255,255,255,0.2);
+  --ink:     #eeeaf4;
+  --ink2:    rgba(238,234,244,0.55);
+  --ink3:    rgba(238,234,244,0.28);
+  --ink4:    rgba(238,234,244,0.12);
+  --gold:    #c6a84a;
+  --goldb:   #e0c26a;
+  --gold-glow: rgba(198,168,74,0.18);
+  --gold-dim:  rgba(198,168,74,0.1);
+  --teal:    #38c9b4;
+  --teal-dim:rgba(56,201,180,0.1);
+  --rose:    #e8607a;
+  --rose-dim:rgba(232,96,122,0.1);
+  --green:   #44d498;
+  --green-dim:rgba(68,212,152,0.1);
+  --r:    14px;
+  --rsm:  9px;
+  --rxs:  6px;
+
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Outfit', sans-serif;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* ── Atmospheric BG ───────────────────────────────────────── */
+.sg-atmo {
+  position: fixed; inset: 0; pointer-events: none; z-index: 0;
+}
+.sg-atmo-glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(100px);
+}
+.sg-atmo-glow-1 {
+  width: 700px; height: 500px;
+  top: -200px; right: -200px;
+  background: radial-gradient(ellipse, rgba(198,168,74,0.09) 0%, transparent 70%);
+  animation: atmoFloat1 20s ease-in-out infinite;
+}
+.sg-atmo-glow-2 {
+  width: 500px; height: 400px;
+  bottom: -150px; left: -150px;
+  background: radial-gradient(ellipse, rgba(56,201,180,0.06) 0%, transparent 70%);
+  animation: atmoFloat2 25s ease-in-out infinite;
+}
+@keyframes atmoFloat1 {
+  0%,100%{transform:translate(0,0);}
+  40%{transform:translate(-30px,20px);}
+  70%{transform:translate(20px,-15px);}
+}
+@keyframes atmoFloat2 {
+  0%,100%{transform:translate(0,0);}
+  50%{transform:translate(25px,-20px);}
+}
+
+/* Grid pattern */
+.sg-grid {
+  position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.022) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.022) 1px, transparent 1px);
+  background-size: 40px 40px;
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, black 10%, transparent 100%);
+}
+
+/* ── Layout ───────────────────────────────────────────────── */
+.sg-wrap {
+  position: relative; z-index: 1;
+  max-width: 1100px; margin: 0 auto;
+  padding: 52px 36px 100px;
+}
+
+/* ── Page Head ────────────────────────────────────────────── */
+.sg-head {
+  margin-bottom: 44px;
+  opacity: 0; transform: translateY(14px);
+  animation: rise 0.55s cubic-bezier(.22,1,.36,1) 0.05s forwards;
+}
+.sg-head-tag {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9.5px; letter-spacing: 0.22em; text-transform: uppercase;
+  color: var(--gold); display: flex; align-items: center; gap: 10px;
+  margin-bottom: 10px;
+}
+.sg-head-tag::before { content:''; width:22px; height:1px; background:linear-gradient(90deg,var(--gold),transparent); }
+.sg-h1 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(34px,4.5vw,52px); font-weight: 400;
+  line-height: 1.05; letter-spacing: -0.02em;
+}
+.sg-h1 em { font-style: italic; color: var(--gold); }
+.sg-sub { font-size: 13px; color: var(--ink3); margin-top: 6px; font-weight: 300; }
+
+/* ── Two-col body ─────────────────────────────────────────── */
+.sg-body { display: flex; gap: 28px; align-items: flex-start; }
+
+/* ── Sidebar ──────────────────────────────────────────────── */
+.sg-sidebar {
+  width: 200px; flex-shrink: 0;
+  opacity: 0; transform: translateX(-12px);
+  animation: rise 0.55s cubic-bezier(.22,1,.36,1) 0.12s forwards;
+}
+.sg-sidebar-inner {
+  background: var(--bg1);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 6px;
+  overflow: hidden;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.04);
+}
+
+/* Nav items */
+.sg-nav {
+  display: flex; flex-direction: column; gap: 2px;
+}
+.sg-nav-item {
+  position: relative;
+  display: flex; align-items: center; gap: 10px;
+  padding: 11px 14px;
+  border-radius: 9px;
+  border: none; background: transparent;
+  color: var(--ink3); font-family: 'Outfit', sans-serif;
+  font-size: 13px; font-weight: 400;
+  cursor: pointer; text-align: left;
+  transition: color 0.18s ease, background 0.18s ease;
+  outline: none;
+}
+.sg-nav-item svg { width: 15px; height: 15px; flex-shrink: 0; transition: color 0.18s; }
+.sg-nav-item .nav-arrow {
+  margin-left: auto; opacity: 0;
+  transition: opacity 0.18s, transform 0.18s;
+}
+.sg-nav-item:hover { color: var(--ink2); background: rgba(255,255,255,0.04); }
+.sg-nav-item:hover .nav-arrow { opacity: 1; }
+
+.sg-nav-item.active {
+  color: var(--ink);
+  background: linear-gradient(135deg, rgba(198,168,74,0.14) 0%, rgba(198,168,74,0.05) 100%);
+  font-weight: 500;
+}
+.sg-nav-item.active svg { color: var(--gold); }
+.sg-nav-item.active .nav-arrow { opacity: 1; transform: translateX(2px); color: var(--gold); }
+.sg-nav-item.active::before {
+  content: '';
+  position: absolute; left: 0; top: 20%; bottom: 20%;
+  width: 2px; border-radius: 2px;
+  background: linear-gradient(180deg, var(--gold), var(--goldb));
+  box-shadow: 0 0 8px var(--gold);
+}
+
+/* Nav separator */
+.sg-nav-sep {
+  height: 1px; background: var(--border);
+  margin: 4px 8px;
+}
+
+/* ── Main Panel ───────────────────────────────────────────── */
+.sg-main {
+  flex: 1; min-width: 0;
+  opacity: 0; transform: translateY(16px);
+  animation: rise 0.55s cubic-bezier(.22,1,.36,1) 0.18s forwards;
+}
+
+/* ── Panel Card ───────────────────────────────────────────── */
+.sg-panel {
+  background: var(--bg1);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 32px 80px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.04);
+}
+
+/* Panel header */
+.sg-panel-head {
+  padding: 26px 30px 22px;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(to right, rgba(198,168,74,0.04) 0%, transparent 50%);
+  display: flex; align-items: flex-start; gap: 14px;
+}
+.sg-panel-icon {
+  width: 38px; height: 38px; flex-shrink: 0;
+  border-radius: 10px;
+  background: var(--gold-dim);
+  border: 1px solid rgba(198,168,74,0.2);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--gold);
+}
+.sg-panel-icon svg { width: 17px; height: 17px; }
+.sg-panel-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 22px; font-weight: 400; line-height: 1.2;
+}
+.sg-panel-sub { font-size: 12.5px; color: var(--ink3); margin-top: 3px; font-weight: 300; }
+
+/* Panel body */
+.sg-panel-body { padding: 28px 30px 32px; }
+
+/* ── Toast / Success banner ───────────────────────────────── */
+.sg-toast {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 16px; border-radius: 10px;
+  background: var(--green-dim);
+  border: 1px solid rgba(68,212,152,0.25);
+  font-size: 12.5px; color: var(--green); font-weight: 500;
+  margin-bottom: 22px;
+  animation: toastIn 0.3s cubic-bezier(.34,1.56,.64,1) both;
+}
+.sg-toast-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); flex-shrink: 0; box-shadow: 0 0 8px var(--green); }
+@keyframes toastIn { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:none} }
+
+/* ── Error banner ─────────────────────────────────────────── */
+.sg-error {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 16px; border-radius: 10px;
+  background: var(--rose-dim);
+  border: 1px solid rgba(232,96,122,0.25);
+  font-size: 12.5px; color: var(--rose); font-weight: 500;
+  margin-bottom: 18px;
+  animation: toastIn 0.3s both;
+}
+
+/* ── Form ─────────────────────────────────────────────────── */
+.sg-form { display: flex; flex-direction: column; gap: 20px; }
+.sg-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media(max-width:640px){ .sg-form-grid{grid-template-columns:1fr;} }
+
+/* Field */
+.sg-field { display: flex; flex-direction: column; gap: 7px; }
+.sg-field label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--ink3); font-weight: 500;
+}
+.sg-input-wrap { position: relative; }
+.sg-input {
+  width: 100%; background: var(--bg3);
+  border: 1px solid var(--border2); border-radius: 10px;
+  padding: 11px 14px;
+  font-family: 'Outfit', sans-serif; font-size: 13px;
+  color: var(--ink); outline: none;
+  transition: border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
+  -webkit-appearance: none; appearance: none;
+}
+.sg-input::placeholder { color: var(--ink4); }
+.sg-input:focus {
+  border-color: rgba(198,168,74,0.5);
+  box-shadow: 0 0 0 3px rgba(198,168,74,0.1);
+  background: rgba(198,168,74,0.04);
+}
+.sg-input.has-icon { padding-right: 42px; }
+.sg-input-action {
+  position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+  background: none; border: none; cursor: pointer;
+  color: var(--ink3); transition: color 0.15s; padding: 2px;
+}
+.sg-input-action:hover { color: var(--ink2); }
+
+/* Select */
+.sg-select {
+  width: 100%; background: var(--bg3);
+  border: 1px solid var(--border2); border-radius: 10px;
+  padding: 11px 36px 11px 14px;
+  font-family: 'Outfit', sans-serif; font-size: 13px; color: var(--ink);
+  outline: none; cursor: pointer;
+  -webkit-appearance: none; appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23555' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 14px center;
+  transition: border-color 0.18s, box-shadow 0.18s, background-color 0.18s;
+}
+.sg-select:focus {
+  border-color: rgba(198,168,74,0.5);
+  box-shadow: 0 0 0 3px rgba(198,168,74,0.1);
+}
+.sg-select option { background: #161628; }
+
+/* Static value display */
+.sg-static {
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: 10px; padding: 11px 14px;
+  font-size: 13px; color: var(--ink3); font-family: 'IBM Plex Mono', monospace;
+}
+.sg-static-note { font-size: 11px; color: var(--ink4); margin-top: 5px; }
+
+/* Password strength */
+.sg-pw-strength { display: flex; gap: 4px; margin-top: 5px; }
+.sg-pw-bar { height: 2px; flex: 1; border-radius: 2px; background: var(--border2); transition: background 0.3s; }
+.sg-pw-bar.weak { background: var(--rose); }
+.sg-pw-bar.medium { background: var(--gold); }
+.sg-pw-bar.strong { background: var(--green); }
+
+/* Requirements */
+.sg-reqs {
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: 10px; padding: 14px 16px;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.sg-req {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12px; color: var(--ink3); transition: color 0.2s;
+}
+.sg-req.met { color: var(--green); }
+.sg-req-dot {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--border2); flex-shrink: 0; transition: background 0.2s;
+}
+.sg-req.met .sg-req-dot { background: var(--green); box-shadow: 0 0 6px var(--green); }
+
+/* ── Submit Button ────────────────────────────────────────── */
+.sg-btn {
+  position: relative; overflow: hidden;
+  display: inline-flex; align-items: center; gap: 9px;
+  padding: 12px 26px;
+  background: var(--gold); color: #07070f;
+  font-family: 'Outfit', sans-serif; font-size: 13px; font-weight: 600;
+  border: none; border-radius: 9px; cursor: pointer;
+  box-shadow: 0 4px 20px rgba(198,168,74,0.22), 0 0 0 1px rgba(198,168,74,0.35);
+  transition: all 0.2s cubic-bezier(.22,1,.36,1);
+}
+.sg-btn::before {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(105deg,transparent 30%,rgba(255,255,255,.22) 50%,transparent 70%);
+  background-size: 200% auto;
+  animation: btnShimmer 3s linear infinite;
+}
+.sg-btn:hover:not(:disabled) {
+  background: var(--goldb);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 28px rgba(198,168,74,0.32), 0 0 0 1px rgba(198,168,74,0.5);
+}
+.sg-btn:active:not(:disabled) { transform: translateY(0); }
+.sg-btn:disabled { opacity: 0.38; cursor: not-allowed; transform: none; box-shadow: none; }
+.sg-btn span { position: relative; }
+.sg-btn-spin {
+  width: 14px; height: 14px; border-radius: 50%;
+  border: 2px solid rgba(7,7,15,0.2); border-top-color: #07070f;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes btnShimmer { 0%{background-position:-200% center;} 100%{background-position:200% center;} }
+@keyframes spin { to{transform:rotate(360deg);} }
+
+/* ── Role badge ───────────────────────────────────────────── */
+.sg-role-badge {
+  display: inline-flex; align-items: center;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9.5px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase;
+  padding: 3px 10px; border-radius: 20px;
+}
+.sg-role-badge.admin   { background:rgba(198,168,74,0.12); color:var(--gold); border:1px solid rgba(198,168,74,0.22); }
+.sg-role-badge.accountant { background:var(--teal-dim); color:var(--teal); border:1px solid rgba(56,201,180,0.22); }
+.sg-role-badge.viewer  { background:var(--ink4); color:var(--ink3); border:1px solid var(--border2); }
+
+/* ── User row ─────────────────────────────────────────────── */
+.sg-user-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 14px 16px;
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 12px;
+  transition: border-color 0.15s, background 0.15s;
+}
+.sg-user-row:hover { background: var(--bg3); border-color: var(--border2); }
+.sg-user-avatar {
+  width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
+  background: linear-gradient(135deg, var(--bg4), var(--bg3));
+  border: 1px solid var(--border2);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 16px; font-weight: 500; color: var(--gold);
+}
+.sg-user-name { font-size: 13px; font-weight: 500; }
+.sg-user-email { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--ink3); margin-top: 1px; }
+.sg-user-last { font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: var(--ink4); margin-top: 2px; }
+.sg-role-select {
+  background: var(--bg3); border: 1px solid var(--border2);
+  border-radius: 7px; padding: 6px 30px 6px 10px;
+  font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: var(--ink2);
+  outline: none; cursor: pointer;
+  -webkit-appearance: none; appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23555' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 10px center;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.sg-role-select:focus { border-color: rgba(198,168,74,0.45); box-shadow: 0 0 0 2px rgba(198,168,74,0.1); }
+.sg-role-select option { background: #161628; }
+
+/* ── Permissions info box ─────────────────────────────────── */
+.sg-perms {
+  background: linear-gradient(135deg, rgba(198,168,74,0.07) 0%, rgba(198,168,74,0.03) 100%);
+  border: 1px solid rgba(198,168,74,0.15); border-radius: 12px;
+  padding: 16px 18px;
+}
+.sg-perms-head {
+  display: flex; align-items: center; gap: 8px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9.5px; letter-spacing: 0.15em; text-transform: uppercase;
+  color: var(--gold); font-weight: 500; margin-bottom: 12px;
+}
+.sg-perms-head svg { width: 13px; height: 13px; }
+.sg-perm-row { display: flex; gap: 8px; font-size: 12px; color: var(--ink2); margin-bottom: 6px; line-height: 1.5; }
+.sg-perm-row:last-child { margin-bottom: 0; }
+.sg-perm-key {
+  font-family: 'IBM Plex Mono', monospace; font-size: 10px;
+  color: var(--gold); font-weight: 500;
+  white-space: nowrap; min-width: 80px; padding-top: 1px;
+}
+
+/* ── Section divider ──────────────────────────────────────── */
+.sg-sep {
+  display: flex; align-items: center; gap: 12px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink4);
+}
+.sg-sep::before, .sg-sep::after { content:''; flex:1; height:1px; background:var(--border); }
+
+/* ── Current user chip ────────────────────────────────────── */
+.sg-you-chip {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 8px; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--ink4); background: var(--bg4);
+  border: 1px solid var(--border); border-radius: 4px;
+  padding: 2px 6px; margin-left: 6px;
+}
+
+@keyframes rise {
+  to { opacity: 1; transform: none; }
+}
+
+/* ── Responsive ───────────────────────────────────────────── */
+@media(max-width: 680px) {
+  .sg-wrap { padding: 28px 16px 60px; }
+  .sg-body { flex-direction: column; }
+  .sg-sidebar { width: 100%; }
+  .sg-sidebar-inner { display: flex; gap: 4px; padding: 6px; overflow-x: auto; }
+  .sg-nav { flex-direction: row; gap: 2px; }
+  .sg-nav-item .nav-arrow { display: none; }
+  .sg-nav-sep { display: none; }
+  .sg-panel-head { padding: 20px 20px 16px; }
+  .sg-panel-body { padding: 20px 20px 24px; }
+}
+`;
+
+/* ════════════════════════════════════════════════════════════
+   Password strength helper
+════════════════════════════════════════════════════════════ */
+function pwStrength(pw: string): 0 | 1 | 2 | 3 {
+  if (!pw) return 0;
+  let s = 0;
+  if (pw.length >= 8) s++;
+  if (/[A-Z]/.test(pw) && /[a-z]/.test(pw)) s++;
+  if (/\d/.test(pw) && /[^A-Za-z0-9]/.test(pw)) s++;
+  return s as 0 | 1 | 2 | 3;
+}
+
+/* Subcomponents */
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return <div className="sg-field"><label>{label}</label>{children}</div>;
+}
+
+function StaticField({ label, value, note }: { label: string; value: string; note?: string }) {
+  return (
+    <div className="sg-field">
+      <label>{label}</label>
+      <div className="sg-static">{value}</div>
+      {note && <span className="sg-static-note">{note}</span>}
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════
+   Main Page
+════════════════════════════════════════════════════════════ */
+type Tab = 'company' | 'profile' | 'security' | 'users';
 
 export default function SettingsPage() {
   const { user, company, refreshUser, changePassword } = useAuth();
-  const [tab, setTab] = useState<'company' | 'profile' | 'security' | 'users'>('company');
+  const [tab, setTab] = useState<Tab>('company');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState('');
   const [users, setUsers] = useState<User[]>([]);
 
   const [companyForm, setCompanyForm] = useState({
-    name: company?.name ?? '', address: company?.address ?? '',
-    phone: company?.phone ?? '', email: company?.email ?? '',
-    taxId: company?.taxId ?? '', currency: company?.currency ?? 'USD',
+    name:     company?.name     ?? '',
+    address:  company?.address  ?? '',
+    phone:    company?.phone    ?? '',
+    email:    company?.email    ?? '',
+    taxId:    company?.taxId    ?? '',
+    currency: company?.currency ?? 'USD',
   });
 
   const [profileForm, setProfileForm] = useState({ displayName: user?.displayName ?? '' });
-  const [pwForm, setPwForm] = useState({ current: '', next: '', confirm: '' });
+  const [pwForm, setPwForm]   = useState({ current: '', next: '', confirm: '' });
   const [pwError, setPwError] = useState('');
-  const actor = { uid: user!.uid, email: user!.email, name: user!.displayName };
+  const [showPw, setShowPw]   = useState({ current: false, next: false, confirm: false });
+
+  if (!user) return null;
+  const actor = { uid: user.uid, email: user.email, name: user.displayName };
 
   useEffect(() => {
-    if (tab === 'users' && user) {
-      getCompanyUsers(user.companyId).then(setUsers);
-    }
+    if (tab === 'users') getCompanyUsers(user.companyId).then(setUsers);
   }, [tab, user]);
+
+  const flash = (msg: string) => { setSaved(msg); setTimeout(() => setSaved(''), 3500); };
 
   const saveCompany = async () => {
     setSaving(true);
-    try {
-      await updateCompany(user!.companyId, companyForm, actor);
-      setSaved('Company settings saved.');
-      await refreshUser();
-    } finally { setSaving(false); setTimeout(() => setSaved(''), 3000); }
+    try { await updateCompany(user!.companyId, companyForm, actor); await refreshUser(); flash('Company settings saved.'); }
+    finally { setSaving(false); }
   };
 
   const saveProfile = async () => {
     setSaving(true);
-    try {
-      await updateUser(user!.uid, { displayName: profileForm.displayName }, actor, user!.companyId);
-      await refreshUser();
-      setSaved('Profile updated.');
-    } finally { setSaving(false); setTimeout(() => setSaved(''), 3000); }
+    try { await updateUser(user!.uid, { displayName: profileForm.displayName }, actor, user!.companyId); await refreshUser(); flash('Profile updated.'); }
+    finally { setSaving(false); }
   };
 
   const savePassword = async () => {
     setPwError('');
-    if (pwForm.next !== pwForm.confirm) { setPwError('New passwords do not match'); return; }
-    if (pwForm.next.length < 8) { setPwError('Password must be at least 8 characters'); return; }
+    if (pwForm.next !== pwForm.confirm) { setPwError('New passwords do not match.'); return; }
+    if (pwForm.next.length < 8) { setPwError('Password must be at least 8 characters.'); return; }
     setSaving(true);
     try {
       await changePassword(pwForm.current, pwForm.next);
       setPwForm({ current: '', next: '', confirm: '' });
-      setSaved('Password changed successfully.');
+      flash('Password changed successfully.');
     } catch (e: unknown) {
-      setPwError(e instanceof Error ? e.message : 'Failed to change password');
-    } finally { setSaving(false); setTimeout(() => setSaved(''), 3000); }
+      setPwError(e instanceof Error ? e.message : 'Failed to change password.');
+    } finally { setSaving(false); }
   };
 
   const changeRole = async (uid: string, role: User['role']) => {
     await updateUser(uid, { role }, actor, user!.companyId);
-    setUsers((u) => u.map((x) => x.uid === uid ? { ...x, role } : x));
+    setUsers(u => u.map(x => x.uid === uid ? { ...x, role } : x));
   };
 
-  const tabs = [
-    { id: 'company', label: 'Company', icon: <Building2 className="w-4 h-4" /> },
-    { id: 'profile', label: 'Profile', icon: <Settings className="w-4 h-4" /> },
-    { id: 'security', label: 'Security', icon: <Lock className="w-4 h-4" /> },
-    { id: 'users', label: 'Users & Roles', icon: <Users className="w-4 h-4" /> },
-  ] as const;
+  const strength = pwStrength(pwForm.next);
+  const strengthLabels = ['', 'Weak', 'Fair', 'Strong'];
+  const strengthColors = ['', 'weak', 'medium', 'strong'];
+
+  const tabs: { id: Tab; label: string; icon: React.ReactNode }[] = [
+    { id: 'company',  label: 'Company',      icon: <Building2 /> },
+    { id: 'profile',  label: 'Profile',       icon: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg> },
+    { id: 'security', label: 'Security',      icon: <Lock /> },
+    { id: 'users',    label: 'Users & Roles', icon: <Users /> },
+  ];
+
+  const panelIcons: Record<Tab, React.ReactNode> = {
+    company:  <Building2 />,
+    profile:  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>,
+    security: <Lock />,
+    users:    <Users />,
+  };
+  const panelTitles: Record<Tab, string>    = { company: 'Company Information', profile: 'Your Profile', security: 'Change Password', users: 'Users & Roles' };
+  const panelSubs: Record<Tab, string>      = {
+    company:  'Displayed on invoices, reports, and statements',
+    profile:  'Your personal account details',
+    security: 'Use a strong, unique password for your account',
+    users:    'Control who can access your accounting system',
+  };
 
   return (
     <AuthGuard>
-      <div className="p-6">
-        <PageHeader title="Settings" subtitle="Manage your company and account preferences" />
+      <style>{css}</style>
+      <div className="sg">
+        {/* Background */}
+        <div className="sg-atmo">
+          <div className="sg-atmo-glow sg-atmo-glow-1" />
+          <div className="sg-atmo-glow sg-atmo-glow-2" />
+        </div>
+        <div className="sg-grid" />
 
-        <div className="flex gap-6">
-          {/* Sidebar tabs */}
-          <aside className="w-48 shrink-0">
-            <div className="card p-2 flex flex-col gap-0.5">
-              {tabs.map((t) => (
-                <button key={t.id} onClick={() => setTab(t.id as typeof tab)}
-                  className={`nav-item ${tab === t.id ? 'active' : ''}`}>
-                  {t.icon}{t.label}
-                </button>
-              ))}
-            </div>
-          </aside>
+        <div className="sg-wrap">
+          {/* Page head */}
+          <div className="sg-head">
+            <div className="sg-head-tag">Configuration</div>
+            <h1 className="sg-h1">Set<em>tings</em></h1>
+            <p className="sg-sub">Manage your company and account preferences</p>
+          </div>
 
-          {/* Content */}
-          <div className="flex-1 max-w-xl">
-            {saved && (
-              <div className="mb-4 p-3 rounded-xl bg-[--green-bg] border border-[--green]/20 text-sm text-[--green]">
-                ✓ {saved}
+          <div className="sg-body">
+            {/* Sidebar */}
+            <aside className="sg-sidebar">
+              <div className="sg-sidebar-inner">
+                <nav className="sg-nav">
+                  {tabs.map((t, i) => (
+                    <>
+                      {i === 2 && <div className="sg-nav-sep" key="sep" />}
+                      <button
+                        key={t.id}
+                        className={`sg-nav-item ${tab === t.id ? 'active' : ''}`}
+                        onClick={() => setTab(t.id)}
+                      >
+                        {t.icon}
+                        {t.label}
+                        <ChevronRight size={11} className="nav-arrow" />
+                      </button>
+                    </>
+                  ))}
+                </nav>
               </div>
-            )}
+            </aside>
 
-            {tab === 'company' && (
-              <Card title="Company Information" subtitle="Displayed on invoices and reports">
-                <div className="flex flex-col gap-4">
-                  <Input label="Company Name" value={companyForm.name} onChange={(e) => setCompanyForm((f) => ({ ...f, name: e.target.value }))} />
-                  <Input label="Business Email" type="email" value={companyForm.email} onChange={(e) => setCompanyForm((f) => ({ ...f, email: e.target.value }))} />
-                  <Input label="Phone" value={companyForm.phone} onChange={(e) => setCompanyForm((f) => ({ ...f, phone: e.target.value }))} />
-                  <Input label="Address" value={companyForm.address} onChange={(e) => setCompanyForm((f) => ({ ...f, address: e.target.value }))} />
-                  <Input label="Tax ID / VAT Number" value={companyForm.taxId} onChange={(e) => setCompanyForm((f) => ({ ...f, taxId: e.target.value }))} />
-                  <Select label="Default Currency" value={companyForm.currency}
-                    onChange={(e) => setCompanyForm((f) => ({ ...f, currency: e.target.value }))}
-                    options={[
-                      { value: 'USD', label: 'USD — US Dollar' },
-                      { value: 'EUR', label: 'EUR — Euro' },
-                      { value: 'GBP', label: 'GBP — British Pound' },
-                      { value: 'NGN', label: 'NGN — Nigerian Naira' },
-                      { value: 'CAD', label: 'CAD — Canadian Dollar' },
-                      { value: 'AUD', label: 'AUD — Australian Dollar' },
-                      { value: 'JPY', label: 'JPY — Japanese Yen' },
-                    ]} />
-                  <Button loading={saving} onClick={saveCompany} className="self-start">Save Company Settings</Button>
+            {/* Main */}
+            <div className="sg-main">
+              {/* Toast */}
+              {saved && (
+                <div className="sg-toast">
+                  <div className="sg-toast-dot" />
+                  <Check size={13} />
+                  {saved}
                 </div>
-              </Card>
-            )}
+              )}
 
-            {tab === 'profile' && (
-              <Card title="Profile" subtitle="Your personal account information">
-                <div className="flex flex-col gap-4">
-                  <Input label="Full Name" value={profileForm.displayName} onChange={(e) => setProfileForm({ displayName: e.target.value })} />
+              {/* Panel card */}
+              <div className="sg-panel">
+                <div className="sg-panel-head">
+                  <div className="sg-panel-icon">{panelIcons[tab]}</div>
                   <div>
-                    <label className="text-xs font-semibold text-[--text-2] uppercase tracking-wide">Email</label>
-                    <p className="mt-1.5 text-sm text-[--text-3] p-3 bg-[--bg] rounded-lg border border-[--border]">{user?.email}</p>
-                    <p className="text-xs text-[--text-3] mt-1">Email cannot be changed here.</p>
+                    <div className="sg-panel-title">{panelTitles[tab]}</div>
+                    <div className="sg-panel-sub">{panelSubs[tab]}</div>
                   </div>
-                  <div>
-                    <label className="text-xs font-semibold text-[--text-2] uppercase tracking-wide">Role</label>
-                    <div className="mt-1.5"><Badge variant="purple" className="capitalize">{user?.role}</Badge></div>
-                  </div>
-                  <Button loading={saving} onClick={saveProfile} className="self-start">Update Profile</Button>
                 </div>
-              </Card>
-            )}
 
-            {tab === 'security' && (
-              <Card title="Change Password" subtitle="Use a strong, unique password">
-                <div className="flex flex-col gap-4">
-                  {pwError && <p className="text-sm text-[--red] bg-[--red-bg] border border-[--red]/20 rounded-lg p-3">{pwError}</p>}
-                  <Input label="Current Password" type="password" placeholder="••••••••" value={pwForm.current} onChange={(e) => setPwForm((f) => ({ ...f, current: e.target.value }))} />
-                  <Input label="New Password" type="password" placeholder="Min 8 characters" value={pwForm.next} onChange={(e) => setPwForm((f) => ({ ...f, next: e.target.value }))} />
-                  <Input label="Confirm New Password" type="password" placeholder="Repeat new password" value={pwForm.confirm} onChange={(e) => setPwForm((f) => ({ ...f, confirm: e.target.value }))} />
-                  <div className="p-3 rounded-lg bg-[--bg] border border-[--border] text-xs text-[--text-3]">
-                    <p className="font-semibold text-[--text-2] mb-1">Password requirements:</p>
-                    <ul className="list-disc list-inside space-y-0.5">
-                      <li>At least 8 characters</li>
-                      <li>Mix of letters and numbers recommended</li>
-                      <li>Avoid common passwords</li>
-                    </ul>
-                  </div>
-                  <Button loading={saving} onClick={savePassword} disabled={!pwForm.current || !pwForm.next} className="self-start">
-                    Change Password
-                  </Button>
-                </div>
-              </Card>
-            )}
+                <div className="sg-panel-body">
 
-            {tab === 'users' && (
-              <Card title="Users & Roles" subtitle="Manage who can access your accounting system">
-                <div className="flex flex-col gap-3">
-                  {users.map((u) => (
-                    <div key={u.uid} className="flex items-center justify-between p-3 rounded-xl bg-[--bg] border border-[--border]">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-[--accent-glow] border border-[--accent]/20 flex items-center justify-center">
-                          <span className="text-xs font-bold text-[--accent-2]">{u.displayName?.[0]?.toUpperCase()}</span>
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium">{u.displayName}</p>
-                          <p className="text-xs text-[--text-3]">{u.email}</p>
-                          {u.lastLogin && <p className="text-[10px] text-[--text-3]">Last login: {formatDateTime(u.lastLogin)}</p>}
+                  {/* ── Company Tab ── */}
+                  {tab === 'company' && (
+                    <div className="sg-form">
+                      <Field label="Company Name">
+                        <input className="sg-input" value={companyForm.name} placeholder="Acme Ltd."
+                          onChange={e => setCompanyForm(f => ({ ...f, name: e.target.value }))} />
+                      </Field>
+
+                      <div className="sg-form-grid">
+                        <Field label="Business Email">
+                          <input className="sg-input" type="email" value={companyForm.email} placeholder="hello@company.com"
+                            onChange={e => setCompanyForm(f => ({ ...f, email: e.target.value }))} />
+                        </Field>
+                        <Field label="Phone">
+                          <input className="sg-input" value={companyForm.phone} placeholder="+1 555 000 0000"
+                            onChange={e => setCompanyForm(f => ({ ...f, phone: e.target.value }))} />
+                        </Field>
+                      </div>
+
+                      <Field label="Address">
+                        <input className="sg-input" value={companyForm.address} placeholder="123 Main St, City, Country"
+                          onChange={e => setCompanyForm(f => ({ ...f, address: e.target.value }))} />
+                      </Field>
+
+                      <div className="sg-form-grid">
+                        <Field label="Tax ID / VAT Number">
+                          <input className="sg-input" value={companyForm.taxId} placeholder="XX-XXXXXXX"
+                            onChange={e => setCompanyForm(f => ({ ...f, taxId: e.target.value }))} />
+                        </Field>
+                        <Field label="Default Currency">
+                          <select className="sg-select" value={companyForm.currency}
+                            onChange={e => setCompanyForm(f => ({ ...f, currency: e.target.value }))}>
+                            <option value="USD">USD — US Dollar</option>
+                            <option value="EUR">EUR — Euro</option>
+                            <option value="GBP">GBP — British Pound</option>
+                            <option value="NGN">NGN — Nigerian Naira</option>
+                            <option value="CAD">CAD — Canadian Dollar</option>
+                            <option value="AUD">AUD — Australian Dollar</option>
+                            <option value="JPY">JPY — Japanese Yen</option>
+                          </select>
+                        </Field>
+                      </div>
+
+                      <div>
+                        <button className="sg-btn" disabled={saving} onClick={saveCompany}>
+                          {saving ? <><div className="sg-btn-spin" /><span>Saving…</span></> : <span>Save Company Settings</span>}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ── Profile Tab ── */}
+                  {tab === 'profile' && (
+                    <div className="sg-form">
+                      <Field label="Full Name">
+                        <input className="sg-input" value={profileForm.displayName} placeholder="Your full name"
+                          onChange={e => setProfileForm({ displayName: e.target.value })} />
+                      </Field>
+
+                      <StaticField
+                        label="Email Address"
+                        value={user.email ?? ''}
+                        note="Email address cannot be changed here."
+                      />
+
+                      <div className="sg-field">
+                        <label>Role</label>
+                        <div style={{ marginTop: 2 }}>
+                          <span className={`sg-role-badge ${user.role}`}>{user.role}</span>
                         </div>
                       </div>
-                      {u.uid === user!.uid ? (
-                        <Badge variant="purple" className="capitalize">{u.role}</Badge>
-                      ) : (
-                        <select className="input-field text-xs py-1.5 w-28" value={u.role}
-                          onChange={(e) => changeRole(u.uid, e.target.value as User['role'])}>
-                          <option value="admin" style={{ background: '#161b27' }}>Admin</option>
-                          <option value="accountant" style={{ background: '#161b27' }}>Accountant</option>
-                          <option value="viewer" style={{ background: '#161b27' }}>Viewer</option>
-                        </select>
-                      )}
+
+                      <div>
+                        <button className="sg-btn" disabled={saving} onClick={saveProfile}>
+                          {saving ? <><div className="sg-btn-spin" /><span>Saving…</span></> : <span>Update Profile</span>}
+                        </button>
+                      </div>
                     </div>
-                  ))}
-                  <div className="p-3 rounded-xl bg-[--accent-glow] border border-[--accent]/20 text-xs text-[--text-2]">
-                    <div className="flex items-center gap-2 mb-2 font-semibold text-[--accent-2]"><Shield className="w-3.5 h-3.5" />Role Permissions</div>
-                    <p><strong>Admin:</strong> Full access — all modules, settings, user management</p>
-                    <p><strong>Accountant:</strong> Create, edit, post transactions — no settings access</p>
-                    <p><strong>Viewer:</strong> Read-only access to all data</p>
-                  </div>
+                  )}
+
+                  {/* ── Security Tab ── */}
+                  {tab === 'security' && (
+                    <div className="sg-form">
+                      {pwError && (
+                        <div className="sg-error">
+                          <AlertCircle size={13} />
+                          {pwError}
+                        </div>
+                      )}
+
+                      <Field label="Current Password">
+                        <div className="sg-input-wrap">
+                          <input
+                            className="sg-input has-icon"
+                            type={showPw.current ? 'text' : 'password'}
+                            placeholder="••••••••"
+                            value={pwForm.current}
+                            onChange={e => setPwForm(f => ({ ...f, current: e.target.value }))}
+                          />
+                          <button className="sg-input-action" onClick={() => setShowPw(s => ({ ...s, current: !s.current }))}>
+                            {showPw.current ? <EyeOff size={14} /> : <Eye size={14} />}
+                          </button>
+                        </div>
+                      </Field>
+
+                      <div className="sg-sep">New Password</div>
+
+                      <Field label="New Password">
+                        <div className="sg-input-wrap">
+                          <input
+                            className="sg-input has-icon"
+                            type={showPw.next ? 'text' : 'password'}
+                            placeholder="Min. 8 characters"
+                            value={pwForm.next}
+                            onChange={e => setPwForm(f => ({ ...f, next: e.target.value }))}
+                          />
+                          <button className="sg-input-action" onClick={() => setShowPw(s => ({ ...s, next: !s.next }))}>
+                            {showPw.next ? <EyeOff size={14} /> : <Eye size={14} />}
+                          </button>
+                        </div>
+                        {pwForm.next && (
+                          <div className="sg-pw-strength">
+                            {[1,2,3].map(i => (
+                              <div key={i} className={`sg-pw-bar ${strength >= i ? strengthColors[strength] : ''}`} />
+                            ))}
+                            <span style={{ fontSize: 10, fontFamily: "'IBM Plex Mono',monospace", color: 'var(--ink3)', marginLeft: 4, alignSelf: 'center' }}>
+                              {strengthLabels[strength]}
+                            </span>
+                          </div>
+                        )}
+                      </Field>
+
+                      <Field label="Confirm New Password">
+                        <div className="sg-input-wrap">
+                          <input
+                            className="sg-input has-icon"
+                            type={showPw.confirm ? 'text' : 'password'}
+                            placeholder="Repeat new password"
+                            value={pwForm.confirm}
+                            onChange={e => setPwForm(f => ({ ...f, confirm: e.target.value }))}
+                          />
+                          <button className="sg-input-action" onClick={() => setShowPw(s => ({ ...s, confirm: !s.confirm }))}>
+                            {showPw.confirm ? <EyeOff size={14} /> : <Eye size={14} />}
+                          </button>
+                        </div>
+                      </Field>
+
+                      <div className="sg-reqs">
+                        {[
+                          { label: 'At least 8 characters', met: pwForm.next.length >= 8 },
+                          { label: 'Mix of uppercase & lowercase', met: /[A-Z]/.test(pwForm.next) && /[a-z]/.test(pwForm.next) },
+                          { label: 'Contains a number', met: /\d/.test(pwForm.next) },
+                          { label: 'Passwords match', met: !!pwForm.confirm && pwForm.next === pwForm.confirm },
+                        ].map(r => (
+                          <div key={r.label} className={`sg-req ${r.met ? 'met' : ''}`}>
+                            <div className="sg-req-dot" />
+                            {r.label}
+                          </div>
+                        ))}
+                      </div>
+
+                      <div>
+                        <button
+                          className="sg-btn"
+                          disabled={saving || !pwForm.current || !pwForm.next}
+                          onClick={savePassword}
+                        >
+                          {saving ? <><div className="sg-btn-spin" /><span>Changing…</span></> : <span>Change Password</span>}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ── Users Tab ── */}
+                  {tab === 'users' && (
+                    <div className="sg-form">
+                      {users.length === 0 ? (
+                        <div style={{ textAlign:'center', padding:'40px', color:'var(--ink3)', fontSize:13 }}>
+                          Loading users…
+                        </div>
+                      ) : (
+                        users.map(u => (
+                          <div className="sg-user-row" key={u.uid}>
+                            <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+                              <div className="sg-user-avatar">
+                                {u.displayName?.[0]?.toUpperCase() ?? '?'}
+                              </div>
+                              <div>
+                                <div className="sg-user-name">
+                                  {u.displayName}
+                                  {u.uid === user.uid && <span className="sg-you-chip">you</span>}
+                                </div>
+                                <div className="sg-user-email">{u.email}</div>
+                                {u.lastLogin && (
+                                  <div className="sg-user-last">Last login {formatDateTime(u.lastLogin)}</div>
+                                )}
+                              </div>
+                            </div>
+                            {u.uid === user.uid ? (
+                              <span className={`sg-role-badge ${u.role}`}>{u.role}</span>
+                            ) : (
+                              <select
+                                className="sg-role-select"
+                                value={u.role}
+                                onChange={e => changeRole(u.uid, e.target.value as User['role'])}
+                              >
+                                <option value="admin">Admin</option>
+                                <option value="accountant">Accountant</option>
+                                <option value="viewer">Viewer</option>
+                              </select>
+                            )}
+                          </div>
+                        ))
+                      )}
+
+                      <div className="sg-perms">
+                        <div className="sg-perms-head"><Shield />Role Permissions</div>
+                        {[
+                          { role:'Admin',      desc:'Full access — all modules, settings, and user management' },
+                          { role:'Accountant', desc:'Create, edit, and post transactions — no settings access' },
+                          { role:'Viewer',     desc:'Read-only access to all reports and data' },
+                        ].map(r => (
+                          <div key={r.role} className="sg-perm-row">
+                            <span className="sg-perm-key">{r.role}</span>
+                            {r.desc}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                 </div>
-              </Card>
-            )}
+              </div>
+            </div>
           </div>
         </div>
       </div>

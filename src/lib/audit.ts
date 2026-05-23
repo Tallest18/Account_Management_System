@@ -27,41 +27,41 @@ interface LogParams {
   severity?: 'info' | 'warning' | 'critical';
 }
 
-export async function createAuditLog(params: LogParams): Promise<void> {
-  try {
-    const logEntry: Omit<AuditLog, 'id'> = {
-      companyId: params.companyId,
-      userId: params.userId,
-      userEmail: params.userEmail,
-      userName: params.userName,
-      action: params.action,
-      module: params.module,
-      entityId: params.entityId,
-      entityType: params.entityType,
-      description: params.description,
-      changes: params.changes,
-      timestamp: new Date().toISOString(),
-      severity: params.severity ?? 'info',
-      ipAddress: await getClientIP(),
-      userAgent: typeof window !== 'undefined' ? window.navigator.userAgent : undefined,
-    };
-
-    await addDoc(collection(db, 'audit_logs'), {
-      ...logEntry,
-      _timestamp: Timestamp.now(),
-    });
-  } catch (error) {
-    console.error('Failed to write audit log:', error);
-  }
+// Remove all undefined/null values so Firestore never rejects the document
+function cleanForFirestore(obj: Record<string, unknown>): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(obj).filter(([, v]) => v !== undefined && v !== null)
+  );
 }
 
-async function getClientIP(): Promise<string> {
+export async function createAuditLog(params: LogParams): Promise<void> {
   try {
-    const res = await fetch('https://api.ipify.org?format=json');
-    const data = await res.json();
-    return data.ip ?? 'unknown';
-  } catch {
-    return 'unknown';
+    // Skip if companyId or userId is missing/unknown — user not yet authenticated
+    if (!params.companyId || params.companyId === 'unknown') return;
+    if (!params.userId || params.userId === 'anonymous') return;
+
+    const raw: Record<string, unknown> = {
+      companyId:   params.companyId,
+      userId:      params.userId,
+      userEmail:   params.userEmail,
+      userName:    params.userName,
+      action:      params.action,
+      module:      params.module,
+      description: params.description,
+      severity:    params.severity ?? 'info',
+      timestamp:   new Date().toISOString(),
+      _timestamp:  Timestamp.now(),
+      userAgent:   typeof window !== 'undefined' ? window.navigator.userAgent : undefined,
+      // Optional fields — only added if they have a value
+      ...(params.entityId   ? { entityId:   params.entityId }   : {}),
+      ...(params.entityType ? { entityType: params.entityType } : {}),
+      ...(params.changes?.length ? { changes: params.changes } : {}),
+    };
+
+    await addDoc(collection(db, 'audit_logs'), cleanForFirestore(raw));
+  } catch (error) {
+    // Log silently — audit failures must never crash the main app
+    console.error('Failed to write audit log:', error);
   }
 }
 
@@ -73,7 +73,7 @@ export function diffObjects(
   const allKeys = new Set([...Object.keys(oldObj), ...Object.keys(newObj)]);
   for (const key of allKeys) {
     if (JSON.stringify(oldObj[key]) !== JSON.stringify(newObj[key])) {
-      changes.push({ field: key, oldValue: oldObj[key], newValue: newObj[key] });
+      changes.push({ field: key, oldValue: oldObj[key] ?? null, newValue: newObj[key] ?? null });
     }
   }
   return changes;
@@ -91,34 +91,29 @@ export async function getAuditLogs(
   pageSize = 50,
   lastDoc?: DocumentSnapshot
 ): Promise<{ logs: AuditLog[]; lastVisible: DocumentSnapshot | null }> {
-  let q = query(
-    collection(db, 'audit_logs'),
+  const constraints: Parameters<typeof query>[1][] = [
     where('companyId', '==', companyId),
     orderBy('_timestamp', 'desc'),
-    limit(pageSize)
-  );
+    limit(pageSize),
+  ];
 
-  if (filters.userId) {
-    q = query(q, where('userId', '==', filters.userId));
-  }
-  if (filters.module) {
-    q = query(q, where('module', '==', filters.module));
-  }
-  if (filters.action) {
-    q = query(q, where('action', '==', filters.action));
-  }
-  if (lastDoc) {
-    q = query(q, startAfter(lastDoc));
-  }
+  if (filters.userId) constraints.push(where('userId', '==', filters.userId));
+  if (filters.module) constraints.push(where('module', '==', filters.module));
+  if (filters.action) constraints.push(where('action', '==', filters.action));
+  if (lastDoc)        constraints.push(startAfter(lastDoc));
 
+  const q = query(collection(db, 'audit_logs'), ...constraints);
   const snapshot = await getDocs(q);
+
   const logs: AuditLog[] = snapshot.docs.map((doc) => ({
     id: doc.id,
     ...(doc.data() as Omit<AuditLog, 'id'>),
   }));
 
   const lastVisible =
-    snapshot.docs.length === pageSize ? snapshot.docs[snapshot.docs.length - 1] : null;
+    snapshot.docs.length === pageSize
+      ? snapshot.docs[snapshot.docs.length - 1]
+      : null;
 
   return { logs, lastVisible };
 }

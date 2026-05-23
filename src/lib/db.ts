@@ -6,14 +6,11 @@ import {
   addDoc,
   setDoc,
   updateDoc,
-  deleteDoc,
   query,
   where,
   orderBy,
   limit,
   onSnapshot,
-  Timestamp,
-  serverTimestamp,
   writeBatch,
   increment,
   QueryConstraint,
@@ -32,9 +29,9 @@ import {
   User,
   Company,
 } from '@/types';
-import { generateId, roundTo2 } from './utils';
+import { roundTo2 } from './utils';
 
-// ─── Generic helpers ─────────────────────────────────────────────────────────
+// ─── Generic helpers ──────────────────────────────────────────────────────────
 function docToData<T>(snap: DocumentSnapshot): T | null {
   if (!snap.exists()) return null;
   return { id: snap.id, ...snap.data() } as T;
@@ -44,7 +41,7 @@ function snapshotToList<T>(snap: QuerySnapshot): T[] {
   return snap.docs.map((d) => ({ id: d.id, ...d.data() } as T));
 }
 
-// ─── Company ─────────────────────────────────────────────────────────────────
+// ─── Company ──────────────────────────────────────────────────────────────────
 export async function getCompany(companyId: string): Promise<Company | null> {
   const snap = await getDoc(doc(db, 'companies', companyId));
   return docToData<Company>(snap);
@@ -68,7 +65,7 @@ export async function updateCompany(
   });
 }
 
-// ─── Accounts ────────────────────────────────────────────────────────────────
+// ─── Accounts ─────────────────────────────────────────────────────────────────
 export async function getAccounts(companyId: string): Promise<Account[]> {
   const q = query(
     collection(db, 'accounts'),
@@ -128,7 +125,7 @@ export function subscribeToAccounts(
   return onSnapshot(q, (snap) => callback(snapshotToList<Account>(snap)));
 }
 
-// ─── Journal Entries ─────────────────────────────────────────────────────────
+// ─── Journal Entries ──────────────────────────────────────────────────────────
 export async function getJournalEntries(
   companyId: string,
   constraints: QueryConstraint[] = []
@@ -152,11 +149,9 @@ export async function createJournalEntry(
   actor: { uid: string; email: string; name: string }
 ): Promise<string> {
   const now = new Date().toISOString();
-  // Generate sequential entry number
   const countersRef = doc(db, 'counters', `${data.companyId}_je`);
   const batch = writeBatch(db);
 
-  // Get next sequence
   const counterSnap = await getDoc(countersRef);
   const seq = ((counterSnap.data()?.value ?? 0) as number) + 1;
   batch.set(countersRef, { value: seq }, { merge: true });
@@ -177,7 +172,6 @@ export async function createJournalEntry(
 
   await batch.commit();
 
-  // If posted, update account balances
   if (data.status === 'posted') {
     await updateAccountBalances(data.lines, data.companyId, 1);
   }
@@ -245,7 +239,6 @@ export async function voidJournalEntry(
     updatedBy: actor.uid,
   });
 
-  // Reverse account balance impact
   await updateAccountBalances(entry.lines, companyId, -1);
 
   await createAuditLog({
@@ -490,7 +483,7 @@ export async function getPayments(companyId: string): Promise<Payment[]> {
   return snapshotToList<Payment>(await getDocs(q));
 }
 
-// ─── Users ───────────────────────────────────────────────────────────────────
+// ─── Users ────────────────────────────────────────────────────────────────────
 export async function getUser(uid: string): Promise<User | null> {
   const snap = await getDoc(doc(db, 'users', uid));
   return docToData<User>(snap);
@@ -525,4 +518,53 @@ export async function getCompanyUsers(companyId: string): Promise<User[]> {
     where('companyId', '==', companyId)
   );
   return snapshotToList<User>(await getDocs(q));
+}
+
+// ─── Ledger / Transactions by Account ────────────────────────────────────────
+export interface Transaction {
+  id: string;
+  date: string;
+  description: string;
+  memo?: string;
+  reference?: string;
+  debit: number;
+  credit: number;
+  entryNumber: string;
+  journalEntryId: string;
+}
+
+export async function getTransactionsByAccount(
+  companyId: string,
+  accountId: string
+): Promise<Transaction[]> {
+  const q = query(
+    collection(db, 'journal_entries'),
+    where('companyId', '==', companyId),
+    where('status', '==', 'posted'),
+    orderBy('date', 'asc')
+  );
+
+  const snap = await getDocs(q);
+  const transactions: Transaction[] = [];
+
+  snap.docs.forEach((d) => {
+    const entry = { id: d.id, ...d.data() } as JournalEntry;
+    entry.lines
+      .filter((line) => line.accountId === accountId)
+      .forEach((line, idx) => {
+        transactions.push({
+          id: `${entry.id}_${idx}`,
+          date: entry.date,
+          description: entry.description,
+          memo: (line as JournalLine & { description?: string }).description ?? undefined,
+          reference: entry.entryNumber,
+          debit: line.debit ?? 0,
+          credit: line.credit ?? 0,
+          entryNumber: entry.entryNumber,
+          journalEntryId: entry.id,
+        });
+      });
+  });
+
+  return transactions;
 }
