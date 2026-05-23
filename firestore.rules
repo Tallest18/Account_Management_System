@@ -2,118 +2,75 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ── Helpers ──────────────────────────────────────────────────────────────
-    function isAuthenticated() {
-      return request.auth != null;
-    }
-
-    function getUserData() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
-    }
-
-    function isInCompany(companyId) {
-      return isAuthenticated() && getUserData().companyId == companyId;
-    }
-
-    function hasRole(role) {
-      return isAuthenticated() && getUserData().role == role;
-    }
-
-    function isAdminOrAccountant(companyId) {
-      let userData = getUserData();
-      return isAuthenticated()
-        && userData.companyId == companyId
-        && userData.role in ['admin', 'accountant']
-        && userData.isActive == true;
-    }
-
-    function isAdmin(companyId) {
-      let userData = getUserData();
-      return isAuthenticated()
-        && userData.companyId == companyId
-        && userData.role == 'admin'
-        && userData.isActive == true;
-    }
-
+    function isAuthenticated() { return request.auth != null; }
+    function getUserData() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data; }
     function isActiveUser(companyId) {
-      let userData = getUserData();
-      return isAuthenticated()
-        && userData.companyId == companyId
-        && userData.isActive == true;
+      let u = getUserData();
+      return isAuthenticated() && u.companyId == companyId && u.isActive == true;
+    }
+    function isAdminOrAccountant(companyId) {
+      let u = getUserData();
+      return isAuthenticated() && u.companyId == companyId && u.role in ['admin','accountant'] && u.isActive == true;
+    }
+    function isAdmin(companyId) {
+      let u = getUserData();
+      return isAuthenticated() && u.companyId == companyId && u.role == 'admin' && u.isActive == true;
     }
 
-    // ── Users ─────────────────────────────────────────────────────────────────
     match /users/{userId} {
-      allow read: if isAuthenticated() && (
-        request.auth.uid == userId ||
-        getUserData().companyId == resource.data.companyId
-      );
+      allow read: if isAuthenticated() && (request.auth.uid == userId || getUserData().companyId == resource.data.companyId);
       allow create: if isAuthenticated() && request.auth.uid == userId;
-      allow update: if isAuthenticated() && (
-        request.auth.uid == userId ||
-        isAdmin(resource.data.companyId)
-      );
-      allow delete: if false; // Never hard-delete users
+      allow update: if isAuthenticated() && (request.auth.uid == userId || isAdmin(resource.data.companyId));
+      allow delete: if false;
     }
-
-    // ── Companies ─────────────────────────────────────────────────────────────
     match /companies/{companyId} {
       allow read: if isActiveUser(companyId);
       allow create: if isAuthenticated();
       allow update: if isAdmin(companyId);
       allow delete: if false;
     }
-
-    // ── Accounts ──────────────────────────────────────────────────────────────
     match /accounts/{accountId} {
       allow read: if isActiveUser(resource.data.companyId);
       allow create: if isAdminOrAccountant(request.resource.data.companyId);
       allow update: if isAdminOrAccountant(resource.data.companyId);
-      allow delete: if false; // Accounts should be deactivated, never deleted
+      allow delete: if false;
     }
-
-    // ── Journal Entries ───────────────────────────────────────────────────────
     match /journal_entries/{entryId} {
       allow read: if isActiveUser(resource.data.companyId);
       allow create: if isAdminOrAccountant(request.resource.data.companyId);
-      allow update: if isAdminOrAccountant(resource.data.companyId)
-        && (resource.data.status == 'draft' || request.resource.data.status == 'voided');
-      allow delete: if false; // Never delete journal entries
+      allow update: if isAdminOrAccountant(resource.data.companyId);
+      allow delete: if false;
     }
-
-    // ── Invoices ──────────────────────────────────────────────────────────────
     match /invoices/{invoiceId} {
       allow read: if isActiveUser(resource.data.companyId);
       allow create: if isAdminOrAccountant(request.resource.data.companyId);
       allow update: if isAdminOrAccountant(resource.data.companyId);
       allow delete: if false;
     }
-
-    // ── Payments ──────────────────────────────────────────────────────────────
     match /payments/{paymentId} {
       allow read: if isActiveUser(resource.data.companyId);
       allow create: if isAdminOrAccountant(request.resource.data.companyId);
       allow update: if isAdmin(resource.data.companyId);
       allow delete: if false;
     }
-
-    // ── Contacts ──────────────────────────────────────────────────────────────
     match /contacts/{contactId} {
       allow read: if isActiveUser(resource.data.companyId);
       allow create: if isAdminOrAccountant(request.resource.data.companyId);
       allow update: if isAdminOrAccountant(resource.data.companyId);
       allow delete: if false;
     }
-
-    // ── Audit Logs ────────────────────────────────────────────────────────────
     match /audit_logs/{logId} {
       allow read: if isAdmin(resource.data.companyId);
-      allow create: if isAuthenticated(); // System creates these
-      allow update: if false; // Audit logs are immutable
-      allow delete: if false; // Audit logs are immutable
+      allow create: if isAuthenticated();
+      allow update: if false;
+      allow delete: if false;
     }
-
-    // ── Counters ──────────────────────────────────────────────────────────────
+    match /invites/{inviteId} {
+      allow read: if true;
+      allow create: if isAdmin(request.resource.data.companyId);
+      allow update: if true;
+      allow delete: if false;
+    }
     match /counters/{counterId} {
       allow read, write: if isAuthenticated();
     }

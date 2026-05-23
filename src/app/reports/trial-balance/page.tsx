@@ -4,7 +4,7 @@ import { AuthGuard } from '@/components/auth/AuthGuard';
 import { useAuth } from '@/context/AuthContext';
 import { getAccounts } from '@/lib/db';
 import { Account } from '@/types';
-import { formatCurrency, toTitleCase, groupBy } from '@/lib/utils';
+import { formatCurrency, groupBy } from '@/lib/utils';
 import { BarChart3, Download, RefreshCw, CheckCircle2, AlertTriangle, Wallet, Scale, Landmark, BarChart2, Receipt, TrendingUp } from 'lucide-react';
 
 /* ─── Type Meta ─────────────────────────────────────────────────────────── */
@@ -21,14 +21,15 @@ function MetricCard({ label, value, sub, color, icon, delay = 0 }: {
   label: string; value: string; sub?: string; color: string; icon: React.ReactNode; delay?: number;
 }) {
   return (
-    <div style={{
-      background: 'rgba(255,255,255,0.025)',
-      border: `1px solid ${color}22`,
-      borderRadius: 16, padding: '20px 22px',
-      position: 'relative', overflow: 'hidden',
-      animation: `cardIn 0.5s ease ${delay}s both`,
-      transition: 'all 0.3s ease',
-    }}
+    <div
+      style={{
+        background: 'rgba(255,255,255,0.025)',
+        border: `1px solid ${color}22`,
+        borderRadius: 16, padding: '20px 22px',
+        position: 'relative', overflow: 'hidden',
+        animation: `cardIn 0.5s ease ${delay}s both`,
+        transition: 'all 0.3s ease',
+      }}
       onMouseEnter={e => {
         const el = e.currentTarget as HTMLElement;
         el.style.borderColor = color + '44';
@@ -88,7 +89,7 @@ function BalanceIndicator({ isBalanced, difference }: { isBalanced: boolean; dif
 function AccountRow({ acct, index }: { acct: Account; index: number }) {
   const [hovered, setHovered] = useState(false);
   const isDebitNormal = acct.type === 'asset' || acct.type === 'expense';
-  const debit  = isDebitNormal && acct.balance > 0  ? acct.balance  : null;
+  const debit  = isDebitNormal && acct.balance > 0  ? acct.balance : null;
   const credit = !isDebitNormal && acct.balance > 0 ? acct.balance : null;
 
   return (
@@ -142,21 +143,18 @@ function SectionHeader({ type, count }: { type: string; count: number }) {
 
 /* ─── Totals Footer ─────────────────────────────────────────────────────── */
 function TotalsRow({ totalDebit, totalCredit }: { totalDebit: number; totalCredit: number }) {
-  const diff = Math.abs(totalDebit - totalCredit);
   return (
-    <>
-      <tr style={{ background: 'rgba(212,175,55,0.04)', borderTop: '2px solid rgba(212,175,55,0.25)' }}>
-        <td colSpan={3} style={{ padding: '16px 20px', fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 11, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)' }}>
-          Total
-        </td>
-        <td style={{ padding: '16px 20px', textAlign: 'right', fontFamily: "'DM Serif Display', serif", fontSize: 20, fontWeight: 700, color: '#34d399' }}>
-          {formatCurrency(totalDebit)}
-        </td>
-        <td style={{ padding: '16px 20px', textAlign: 'right', fontFamily: "'DM Serif Display', serif", fontSize: 20, fontWeight: 700, color: '#f87171' }}>
-          {formatCurrency(totalCredit)}
-        </td>
-      </tr>
-    </>
+    <tr style={{ background: 'rgba(212,175,55,0.04)', borderTop: '2px solid rgba(212,175,55,0.25)' }}>
+      <td colSpan={3} style={{ padding: '16px 20px', fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 11, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)' }}>
+        Total
+      </td>
+      <td style={{ padding: '16px 20px', textAlign: 'right', fontFamily: "'DM Serif Display', serif", fontSize: 20, fontWeight: 700, color: '#34d399' }}>
+        {formatCurrency(totalDebit)}
+      </td>
+      <td style={{ padding: '16px 20px', textAlign: 'right', fontFamily: "'DM Serif Display', serif", fontSize: 20, fontWeight: 700, color: '#f87171' }}>
+        {formatCurrency(totalCredit)}
+      </td>
+    </tr>
   );
 }
 
@@ -173,13 +171,15 @@ function Spinner() {
 /* ─── Icon Button ───────────────────────────────────────────────────────── */
 function IconBtn({ icon, label, onClick }: { icon: React.ReactNode; label: string; onClick?: () => void }) {
   return (
-    <button onClick={onClick} style={{
-      display: 'flex', alignItems: 'center', gap: 7, padding: '9px 16px',
-      borderRadius: 10, border: '1px solid rgba(255,255,255,0.1)',
-      background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.55)',
-      fontSize: 12, fontWeight: 600, fontFamily: "'Syne', sans-serif",
-      letterSpacing: '0.03em', cursor: 'pointer', transition: 'all 0.2s',
-    }}
+    <button
+      onClick={onClick}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 7, padding: '9px 16px',
+        borderRadius: 10, border: '1px solid rgba(255,255,255,0.1)',
+        background: 'rgba(255,255,255,0.04)', color: 'rgba(255,255,255,0.55)',
+        fontSize: 12, fontWeight: 600, fontFamily: "'Syne', sans-serif",
+        letterSpacing: '0.03em', cursor: 'pointer', transition: 'all 0.2s',
+      }}
       onMouseEnter={e => {
         const el = e.currentTarget as HTMLElement;
         el.style.background = 'rgba(255,255,255,0.08)';
@@ -207,13 +207,31 @@ export default function TrialBalancePage() {
 
   const load = useCallback(async (isRefresh = false) => {
     if (!user) return;
-    isRefresh ? setRefreshing(true) : setLoading(true);
+    if (isRefresh) {
+      setRefreshing(true);
+    } else {
+      setLoading(true);
+    }
     const data = await getAccounts(user.companyId);
     setAccounts(data.filter((a) => a.balance !== 0));
-    isRefresh ? setRefreshing(false) : setLoading(false);
+    if (isRefresh) {
+      setRefreshing(false);
+    } else {
+      setLoading(false);
+    }
   }, [user]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    let cancelled = false;
+    if (!user) return;
+    getAccounts(user.companyId).then((data) => {
+      if (!cancelled) {
+        setAccounts(data.filter((a) => a.balance !== 0));
+        setLoading(false);
+      }
+    });
+    return () => { cancelled = true; };
+  }, [user]);
 
   const grouped = groupBy(accounts, 'type');
   const totalDebit  = accounts.filter((a) => a.type === 'asset' || a.type === 'expense').reduce((s, a) => s + Math.abs(a.balance), 0);
@@ -223,7 +241,6 @@ export default function TrialBalancePage() {
 
   const dateStr = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
-  // Flatten rows for index-based animation
   let rowIndex = 0;
 
   return (
@@ -231,17 +248,14 @@ export default function TrialBalancePage() {
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Syne:wght@400;500;600;700;800&display=swap');
 
-        @keyframes spin       { to { transform: rotate(360deg); } }
-        @keyframes fadeIn     { from { opacity: 0 } to { opacity: 1 } }
-        @keyframes cardIn     { from { opacity: 0; transform: translateY(16px) } to { opacity: 1; transform: translateY(0) } }
-        @keyframes rowIn      { from { opacity: 0; transform: translateX(-6px) } to { opacity: 1; transform: translateX(0) } }
-        @keyframes pulseIn    { from { opacity: 0; transform: scale(0.95) } to { opacity: 1; transform: scale(1) } }
-        @keyframes headerIn   { from { opacity: 0; transform: translateY(-14px) } to { opacity: 1; transform: translateY(0) } }
-        @keyframes glowPulse  { 0%,100% { opacity: 0.4 } 50% { opacity: 0.75 } }
-        @keyframes scanline   {
-          0%   { transform: translateY(-100%); }
-          100% { transform: translateY(100vh); }
-        }
+        @keyframes spin      { to { transform: rotate(360deg); } }
+        @keyframes fadeIn    { from { opacity: 0 } to { opacity: 1 } }
+        @keyframes cardIn    { from { opacity: 0; transform: translateY(16px) } to { opacity: 1; transform: translateY(0) } }
+        @keyframes rowIn     { from { opacity: 0; transform: translateX(-6px) } to { opacity: 1; transform: translateX(0) } }
+        @keyframes pulseIn   { from { opacity: 0; transform: scale(0.95) } to { opacity: 1; transform: scale(1) } }
+        @keyframes headerIn  { from { opacity: 0; transform: translateY(-14px) } to { opacity: 1; transform: translateY(0) } }
+        @keyframes glowPulse { 0%,100% { opacity: 0.4 } 50% { opacity: 0.75 } }
+        @keyframes scanline  { 0% { transform: translateY(-100%); } 100% { transform: translateY(100vh); } }
       `}</style>
 
       <div style={{
@@ -251,8 +265,8 @@ export default function TrialBalancePage() {
         position: 'relative', overflowX: 'hidden',
       }}>
         {/* Ambient orbs */}
-        <div style={{ position: 'fixed', top: -80,  right: -80,  width: 400, height: 400, borderRadius: '50%', background: 'radial-gradient(circle, rgba(212,175,55,0.06) 0%, transparent 70%)', pointerEvents: 'none', animation: 'glowPulse 9s ease-in-out infinite' }} />
-        <div style={{ position: 'fixed', bottom: -120, left: -80, width: 500, height: 500, borderRadius: '50%', background: 'radial-gradient(circle, rgba(52,211,153,0.04) 0%, transparent 70%)', pointerEvents: 'none', animation: 'glowPulse 11s ease-in-out infinite 2s' }} />
+        <div style={{ position: 'fixed', top: -80,   right: -80,  width: 400, height: 400, borderRadius: '50%', background: 'radial-gradient(circle, rgba(212,175,55,0.06) 0%, transparent 70%)',  pointerEvents: 'none', animation: 'glowPulse 9s ease-in-out infinite' }} />
+        <div style={{ position: 'fixed', bottom: -120, left: -80, width: 500, height: 500, borderRadius: '50%', background: 'radial-gradient(circle, rgba(52,211,153,0.04) 0%, transparent 70%)',  pointerEvents: 'none', animation: 'glowPulse 11s ease-in-out infinite 2s' }} />
         <div style={{ position: 'fixed', top: '50%', right: '10%', width: 300, height: 300, borderRadius: '50%', background: 'radial-gradient(circle, rgba(248,113,113,0.03) 0%, transparent 70%)', pointerEvents: 'none', animation: 'glowPulse 13s ease-in-out infinite 4s' }} />
 
         <div style={{ position: 'relative', zIndex: 1, padding: '40px 40px 80px' }}>
@@ -293,9 +307,9 @@ export default function TrialBalancePage() {
             <>
               {/* ── Metric Cards ── */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 14, marginBottom: 32 }}>
-                <MetricCard label="Total Debits"   value={formatCurrency(totalDebit)}   color="#34d399" icon={<TrendingUp style={{ width: 14, height: 14 }} />}  delay={0.05} sub={`${accounts.filter(a => a.type === 'asset' || a.type === 'expense').length} accounts`} />
-                <MetricCard label="Total Credits"  value={formatCurrency(totalCredit)}  color="#f87171" icon={<Scale style={{ width: 14, height: 14 }} />}        delay={0.1}  sub={`${accounts.filter(a => a.type !== 'asset' && a.type !== 'expense').length} accounts`} />
-                <MetricCard label="Total Accounts" value={String(accounts.length)}      color="#D4AF37" icon={<BarChart3 style={{ width: 14, height: 14 }} />}   delay={0.15} sub="with non-zero balance" />
+                <MetricCard label="Total Debits"   value={formatCurrency(totalDebit)}   color="#34d399" icon={<TrendingUp   style={{ width: 14, height: 14 }} />} delay={0.05} sub={`${accounts.filter(a => a.type === 'asset' || a.type === 'expense').length} accounts`} />
+                <MetricCard label="Total Credits"  value={formatCurrency(totalCredit)}  color="#f87171" icon={<Scale        style={{ width: 14, height: 14 }} />} delay={0.1}  sub={`${accounts.filter(a => a.type !== 'asset' && a.type !== 'expense').length} accounts`} />
+                <MetricCard label="Total Accounts" value={String(accounts.length)}      color="#D4AF37" icon={<BarChart3    style={{ width: 14, height: 14 }} />} delay={0.15} sub="with non-zero balance" />
                 <MetricCard label="Difference"     value={formatCurrency(difference)}   color={isBalanced ? '#34d399' : '#f87171'} icon={<CheckCircle2 style={{ width: 14, height: 14 }} />} delay={0.2} sub={isBalanced ? 'Fully balanced' : 'Out of balance'} />
               </div>
 

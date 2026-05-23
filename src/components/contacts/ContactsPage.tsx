@@ -12,13 +12,14 @@ function initials(name: string) {
   return name.split(' ').slice(0, 2).map((w) => w[0]).join('').toUpperCase();
 }
 
+/* Avatar colours updated to indigo/violet family */
 const AVATAR_COLORS = [
-  ['#1e3a5f', '#4a90d9'],
-  ['#1a3d2e', '#3dba7e'],
-  ['#3d1a2e', '#d94a8a'],
-  ['#3d2e1a', '#d9943d'],
-  ['#2a1a3d', '#8a4ad9'],
-  ['#1a3d3d', '#3db8b8'],
+  ['#1e1f5f', '#4f46e5'],   // indigo
+  ['#2a1a3d', '#7c3aed'],   // violet
+  ['#1a1a3d', '#818cf8'],   // indigo-light
+  ['#1e1040', '#a78bfa'],   // purple
+  ['#0f1840', '#6366f1'],   // indigo-mid
+  ['#1a1530', '#c4b5fd'],   // lavender
 ];
 
 function avatarColor(name: string) {
@@ -72,11 +73,7 @@ function StatusBadge({ active }: { active: boolean }) {
         border: `1px solid ${active ? 'rgba(61,186,126,0.25)' : 'rgba(150,150,160,0.2)'}`,
       }}
     >
-      {active ? (
-        <CheckCircle2 size={10} />
-      ) : (
-        <XCircle size={10} />
-      )}
+      {active ? <CheckCircle2 size={10} /> : <XCircle size={10} />}
       {active ? 'Active' : 'Inactive'}
     </span>
   );
@@ -137,7 +134,7 @@ function Field({ label, ...props }: { label: string } & React.InputHTMLAttribute
         onBlur={(e) => { setFocused(false); props.onBlur?.(e); }}
         style={{
           background: 'rgba(255,255,255,0.05)',
-          border: `1px solid ${focused ? 'rgba(74,144,217,0.6)' : 'rgba(255,255,255,0.1)'}`,
+          border: `1px solid ${focused ? 'rgba(99,102,241,0.6)' : 'rgba(255,255,255,0.1)'}`,
           borderRadius: 10,
           padding: '10px 14px',
           fontSize: 14,
@@ -177,18 +174,18 @@ function Modal({ open, onClose, title, children }: { open: boolean; onClose: () 
     >
       <div
         style={{
-          background: 'linear-gradient(160deg, #0f1923 0%, #0c1520 100%)',
-          border: '1px solid rgba(255,255,255,0.1)',
+          background: 'linear-gradient(160deg, #0c0c18 0%, #090914 100%)',
+          border: '1px solid rgba(99,102,241,0.15)',
           borderRadius: 20,
           width: '100%',
           maxWidth: 500,
-          boxShadow: '0 32px 80px rgba(0,0,0,0.6)',
+          boxShadow: '0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(99,102,241,0.08)',
           animation: 'slideUp 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)',
           overflow: 'hidden',
         }}
       >
         {/* Header */}
-        <div style={{ padding: '24px 28px 20px', borderBottom: '1px solid rgba(255,255,255,0.07)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ padding: '24px 28px 20px', borderBottom: '1px solid rgba(99,102,241,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <h2 style={{ margin: 0, fontSize: 17, fontWeight: 600, color: '#fff', fontFamily: "'DM Sans', sans-serif" }}>{title}</h2>
           <button
             onClick={onClose}
@@ -229,9 +226,7 @@ export default function ContactsPage({ type }: { type: 'customer' | 'vendor' }) 
   const [form, setForm] = useState({ name: '', email: '', phone: '', address: '', taxId: '' });
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement>) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
-  if (!user) return null;
-  const actor = { uid: user.uid, email: user.email, name: user.displayName };
-
+  // ── Fix: useEffect must always be called — guard moved inside the effect ──
   useEffect(() => {
     if (!user) return;
     const unsub = subscribeToContacts(user.companyId, (data) => {
@@ -240,6 +235,11 @@ export default function ContactsPage({ type }: { type: 'customer' | 'vendor' }) 
     });
     return unsub;
   }, [user, type]);
+
+  // Early return AFTER all hooks have been declared
+  if (!user) return null;
+
+  const actor = { uid: user.uid, email: user.email, name: user.displayName };
 
   const openEdit = (c: Contact) => {
     setEditContact(c);
@@ -251,9 +251,9 @@ export default function ContactsPage({ type }: { type: 'customer' | 'vendor' }) 
     setSaving(true);
     try {
       if (editContact) {
-        await updateContact(editContact.id, form, actor, user!.companyId);
+        await updateContact(editContact.id, form, actor, user.companyId);
       } else {
-        await createContact({ ...form, companyId: user!.companyId, type, isActive: true, createdBy: user!.uid }, actor);
+        await createContact({ ...form, companyId: user.companyId, type, isActive: true, createdBy: user.uid }, actor);
       }
       setShowForm(false);
       setEditContact(null);
@@ -278,7 +278,6 @@ export default function ContactsPage({ type }: { type: 'customer' | 'vendor' }) 
 
   const isCustomer = type === 'customer';
   const title = isCustomer ? 'Customers' : 'Vendors';
-  const accentColor = isCustomer ? '#4a90d9' : '#3dba7e';
 
   const totalBalance = contacts.reduce((s, c) => s + (c.balance ?? 0), 0);
   const activeCount = contacts.filter((c) => c.isActive).length;
@@ -304,10 +303,10 @@ export default function ContactsPage({ type }: { type: 'customer' | 'vendor' }) 
         .sort-btn.active { color: rgba(255,255,255,0.9); }
 
         .action-btn { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: rgba(255,255,255,0.35); transition: all 0.15s; }
-        .action-btn:hover { background: rgba(74,144,217,0.15); border-color: rgba(74,144,217,0.3); color: #4a90d9; transform: scale(1.05); }
+        .action-btn:hover { background: rgba(99,102,241,0.15); border-color: rgba(99,102,241,0.3); color: #818cf8; transform: scale(1.05); }
 
         .primary-btn { border: none; border-radius: 12px; padding: 10px 20px; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px; font-family: 'DM Sans', sans-serif; transition: all 0.2s; }
-        .primary-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
+        .primary-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(99,102,241,0.3); }
         .primary-btn:active:not(:disabled) { transform: translateY(0); }
         .primary-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
@@ -315,7 +314,7 @@ export default function ContactsPage({ type }: { type: 'customer' | 'vendor' }) 
         .ghost-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
 
         .search-input { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 10px 14px 10px 40px; font-size: 14px; color: #fff; outline: none; width: 260px; font-family: 'DM Sans', sans-serif; transition: all 0.2s; }
-        .search-input:focus { border-color: rgba(74,144,217,0.5); background: rgba(255,255,255,0.07); width: 300px; }
+        .search-input:focus { border-color: rgba(99,102,241,0.5); background: rgba(99,102,241,0.05); width: 300px; }
         .search-input::placeholder { color: rgba(255,255,255,0.25); }
 
         .mono { font-family: 'DM Mono', monospace; }
@@ -325,16 +324,16 @@ export default function ContactsPage({ type }: { type: 'customer' | 'vendor' }) 
         className="contacts-page"
         style={{
           minHeight: '100vh',
-          background: 'linear-gradient(145deg, #080e14 0%, #0a1520 50%, #080d12 100%)',
+          background: 'linear-gradient(145deg, #07070f 0%, #0a0a18 50%, #07070f 100%)',
           padding: '40px 48px',
           position: 'relative',
         }}
       >
-        {/* Subtle background pattern */}
+        {/* Background orbs */}
         <div
           style={{
-            position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden', opacity: 0.03,
-            backgroundImage: `radial-gradient(circle at 20% 20%, ${accentColor} 0%, transparent 50%), radial-gradient(circle at 80% 80%, #8a4ad9 0%, transparent 50%)`,
+            position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden', opacity: 0.04,
+            backgroundImage: `radial-gradient(circle at 20% 20%, #4f46e5 0%, transparent 50%), radial-gradient(circle at 80% 80%, #7c3aed 0%, transparent 50%)`,
           }}
         />
 
@@ -346,9 +345,9 @@ export default function ContactsPage({ type }: { type: 'customer' | 'vendor' }) 
                 <div
                   style={{
                     width: 36, height: 36, borderRadius: 10,
-                    background: `linear-gradient(135deg, ${accentColor}30, ${accentColor}10)`,
-                    border: `1px solid ${accentColor}40`,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', color: accentColor,
+                    background: 'rgba(99,102,241,0.12)',
+                    border: '1px solid rgba(99,102,241,0.25)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#818cf8',
                   }}
                 >
                   <Users size={18} />
@@ -385,7 +384,7 @@ export default function ContactsPage({ type }: { type: 'customer' | 'vendor' }) 
 
               <button
                 className="primary-btn"
-                style={{ background: `linear-gradient(135deg, ${accentColor}, ${accentColor}cc)`, color: '#fff' }}
+                style={{ background: 'linear-gradient(135deg, #4f46e5, #7c3aed)', color: '#fff', boxShadow: '0 0 20px rgba(99,102,241,0.3)' }}
                 onClick={() => { setEditContact(null); setForm({ name: '', email: '', phone: '', address: '', taxId: '' }); setShowForm(true); }}
               >
                 <Plus size={16} />
@@ -402,21 +401,21 @@ export default function ContactsPage({ type }: { type: 'customer' | 'vendor' }) 
             value={contacts.length.toString()}
             sub={`${activeCount} active`}
             icon={<Users size={18} />}
-            color={accentColor}
+            color="#6366f1"
           />
           <StatCard
             label="Total Balance"
             value={formatCurrency(Math.abs(totalBalance))}
             sub={totalBalance >= 0 ? 'Net positive' : 'Net negative'}
             icon={totalBalance >= 0 ? <TrendingUp size={18} /> : <TrendingDown size={18} />}
-            color={totalBalance >= 0 ? '#3dba7e' : '#e24b4a'}
+            color={totalBalance >= 0 ? '#10b981' : '#ef4444'}
           />
           <StatCard
             label="Active Rate"
             value={contacts.length ? `${Math.round((activeCount / contacts.length) * 100)}%` : '—'}
             sub={`${contacts.length - activeCount} inactive`}
             icon={<CheckCircle2 size={18} />}
-            color="#8a4ad9"
+            color="#a78bfa"
           />
         </div>
 
@@ -424,7 +423,7 @@ export default function ContactsPage({ type }: { type: 'customer' | 'vendor' }) 
         <div
           style={{
             background: 'rgba(255,255,255,0.025)',
-            border: '1px solid rgba(255,255,255,0.07)',
+            border: '1px solid rgba(99,102,241,0.1)',
             borderRadius: 20,
             overflow: 'hidden',
             backdropFilter: 'blur(8px)',
@@ -432,18 +431,17 @@ export default function ContactsPage({ type }: { type: 'customer' | 'vendor' }) 
         >
           {loading ? (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 0', gap: 16 }}>
-              <div style={{ width: 36, height: 36, border: `3px solid rgba(255,255,255,0.07)`, borderTopColor: accentColor, borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+              <div style={{ width: 36, height: 36, border: `3px solid rgba(99,102,241,0.12)`, borderTopColor: '#6366f1', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
               <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: 14, margin: 0 }}>Loading {title.toLowerCase()}…</p>
             </div>
           ) : filtered.length === 0 ? (
-            /* Empty State */
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 0', gap: 20 }}>
               <div
                 style={{
                   width: 72, height: 72, borderRadius: 20,
-                  background: `${accentColor}12`,
-                  border: `1px solid ${accentColor}25`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', color: accentColor,
+                  background: 'rgba(99,102,241,0.08)',
+                  border: '1px solid rgba(99,102,241,0.18)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#818cf8',
                 }}
               >
                 <UserPlus size={30} />
@@ -459,7 +457,7 @@ export default function ContactsPage({ type }: { type: 'customer' | 'vendor' }) 
               {!search && (
                 <button
                   className="primary-btn"
-                  style={{ background: `linear-gradient(135deg, ${accentColor}, ${accentColor}cc)`, color: '#fff' }}
+                  style={{ background: 'linear-gradient(135deg, #4f46e5, #7c3aed)', color: '#fff' }}
                   onClick={() => setShowForm(true)}
                 >
                   <Plus size={15} /> Add {isCustomer ? 'Customer' : 'Vendor'}
@@ -470,7 +468,7 @@ export default function ContactsPage({ type }: { type: 'customer' | 'vendor' }) 
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               {/* Table Head */}
               <thead>
-                <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+                <tr style={{ borderBottom: '1px solid rgba(99,102,241,0.1)' }}>
                   {[
                     { label: 'Name', key: 'name' as SortKey, width: '28%' },
                     { label: 'Email', width: '20%' },
@@ -515,7 +513,7 @@ export default function ContactsPage({ type }: { type: 'customer' | 'vendor' }) 
                     className="row-animate"
                     style={{
                       borderBottom: '1px solid rgba(255,255,255,0.04)',
-                      background: hoveredRow === c.id ? 'rgba(255,255,255,0.03)' : 'transparent',
+                      background: hoveredRow === c.id ? 'rgba(99,102,241,0.04)' : 'transparent',
                       transition: 'background 0.15s',
                       animationDelay: `${idx * 0.04}s`,
                     }}
@@ -543,7 +541,7 @@ export default function ContactsPage({ type }: { type: 'customer' | 'vendor' }) 
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'rgba(255,255,255,0.5)', fontSize: 13 }}>
                           <Mail size={12} style={{ flexShrink: 0, color: 'rgba(255,255,255,0.2)' }} />
                           <a href={`mailto:${c.email}`} style={{ color: 'rgba(255,255,255,0.5)', textDecoration: 'none', transition: 'color 0.15s' }}
-                            onMouseEnter={(e) => ((e.currentTarget.style.color = accentColor))}
+                            onMouseEnter={(e) => ((e.currentTarget.style.color = '#818cf8'))}
                             onMouseLeave={(e) => ((e.currentTarget.style.color = 'rgba(255,255,255,0.5)'))}
                           >
                             {c.email}
@@ -579,8 +577,8 @@ export default function ContactsPage({ type }: { type: 'customer' | 'vendor' }) 
                         style={{
                           fontSize: 14,
                           fontWeight: 600,
-                          color: c.balance >= 0 ? '#3dba7e' : '#e24b4a',
-                          background: c.balance >= 0 ? 'rgba(61,186,126,0.08)' : 'rgba(226,75,74,0.08)',
+                          color: c.balance >= 0 ? '#10b981' : '#ef4444',
+                          background: c.balance >= 0 ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)',
                           padding: '3px 10px',
                           borderRadius: 8,
                         }}
@@ -635,9 +633,10 @@ export default function ContactsPage({ type }: { type: 'customer' | 'vendor' }) 
             <button
               className="primary-btn"
               style={{
-                background: form.name ? `linear-gradient(135deg, ${accentColor}, ${accentColor}cc)` : 'rgba(255,255,255,0.1)',
+                background: form.name ? 'linear-gradient(135deg, #4f46e5, #7c3aed)' : 'rgba(255,255,255,0.1)',
                 color: form.name ? '#fff' : 'rgba(255,255,255,0.3)',
                 cursor: form.name && !saving ? 'pointer' : 'not-allowed',
+                boxShadow: form.name ? '0 0 20px rgba(99,102,241,0.25)' : 'none',
               }}
               disabled={!form.name || saving}
               onClick={handleSave}

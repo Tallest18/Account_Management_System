@@ -17,6 +17,12 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 
+/* ─── Company type ───────────────────────────────────── */
+interface Company {
+  name?: string;
+  currency?: string;
+}
+
 /* ─── constants ──────────────────────────────────────── */
 const statusColor: Record<string, 'green' | 'yellow' | 'red' | 'default'> = {
   posted: 'green', paid: 'green',
@@ -42,7 +48,7 @@ function buildChartData(revenue: number, expenses: number) {
 /* ─── animated counter ───────────────────────────────── */
 function AnimatedValue({ value, formatter }: { value: number; formatter: (v: number) => string }) {
   const [display, setDisplay] = useState(0);
-  const rafRef  = useRef<number>(0);
+  const rafRef   = useRef<number>(0);
   const startRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -159,7 +165,6 @@ function SectionLabel({ children, sub }: { children: React.ReactNode; sub?: stri
   return (
     <div style={{ marginBottom: '16px' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-        {/* Changed from amber #f59e0b to indigo #6366f1 */}
         <span style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: '#818cf8' }}>{children}</span>
         <div style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, rgba(99,102,241,0.4), transparent)' }} />
       </div>
@@ -194,7 +199,6 @@ function GlassCard({ title, subtitle, action, children, padding = true }: {
 function AmbientOrbs() {
   return (
     <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 0, overflow: 'hidden' }}>
-      {/* Changed from amber/indigo/emerald to indigo/violet/purple palette */}
       <div style={{ position: 'absolute', top: '-20%', left: '-10%', width: '600px', height: '600px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(79,70,229,0.10) 0%, transparent 70%)', animation: 'orbFloat1 20s ease-in-out infinite' }} />
       <div style={{ position: 'absolute', top: '30%', right: '-15%', width: '500px', height: '500px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(124,58,237,0.08) 0%, transparent 70%)', animation: 'orbFloat2 25s ease-in-out infinite' }} />
       <div style={{ position: 'absolute', bottom: '-10%', left: '30%', width: '400px', height: '400px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(99,102,241,0.07) 0%, transparent 70%)', animation: 'orbFloat3 18s ease-in-out infinite' }} />
@@ -239,6 +243,9 @@ function useWindowWidth() {
 /* ─── DashboardPage ──────────────────────────────────── */
 export default function DashboardPage() {
   const { user, company } = useAuth();
+  // Cast company once to the typed interface so `any` is never used inline
+  const typedCompany = company as Company | null;
+
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [entries,  setEntries]  = useState<JournalEntry[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -251,6 +258,7 @@ export default function DashboardPage() {
   const isTablet  = width >= 640 && width < 1024;
   const isDesktop = width >= 1024;
 
+  // Fix: added `user` to the dependency array (was missing, flagged by exhaustive-deps)
   useEffect(() => {
     if (!user?.companyId) return;
     let cancelled = false;
@@ -271,7 +279,7 @@ export default function DashboardPage() {
     }
     load();
     return () => { cancelled = true; };
-  }, [user?.companyId]);
+  }, [user, user?.companyId]);
 
   useEffect(() => {
     if (!loading) { const t = setTimeout(() => setVisible(true), 60); return () => clearTimeout(t); }
@@ -283,7 +291,7 @@ export default function DashboardPage() {
   const ar        = useMemo(() => sumBy(accounts.filter(a => a.code === '1100'), 'balance'), [accounts]);
   const ap        = useMemo(() => sumBy(accounts.filter(a => a.code === '2000'), 'balance'), [accounts]);
   const netIncome = revenue - expenses;
-  const cur       = (company as any)?.currency;
+  const cur       = typedCompany?.currency;
   const chartData = useMemo(() => buildChartData(revenue, expenses), [revenue, expenses]);
   const breakdown = useMemo(() => [
     { name: 'Assets',   value: sumBy(accounts.filter(a => a.type === 'asset'),  'balance') },
@@ -308,7 +316,6 @@ export default function DashboardPage() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', flexDirection: 'column', gap: '20px' }}>
         <div style={{ position: 'relative', width: '56px', height: '56px' }}>
           <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: '2px solid rgba(99,102,241,0.15)' }} />
-          {/* Spinner: amber → indigo */}
           <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: '2px solid transparent', borderTopColor: '#6366f1', animation: 'spin 0.8s linear infinite' }} />
           <div style={{ position: 'absolute', inset: '8px', borderRadius: '50%', border: '2px solid transparent', borderTopColor: 'rgba(99,102,241,0.4)', animation: 'spin 1.4s linear infinite reverse' }} />
         </div>
@@ -327,7 +334,6 @@ export default function DashboardPage() {
           </div>
           <h2 style={{ fontSize: '16px', fontWeight: 600, color: '#f9fafb', marginBottom: '8px' }}>Access Restricted</h2>
           <p style={{ fontSize: '13px', color: '#6b7280', marginBottom: '20px', lineHeight: 1.6 }}>Your account doesn&apos;t have permission to read this company&apos;s data.</p>
-          {/* Retry button: amber → indigo */}
           <button onClick={() => window.location.reload()} style={{ padding: '10px 20px', borderRadius: '12px', background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.25)', color: '#818cf8', fontSize: '13px', fontWeight: 500, cursor: 'pointer' }}>Try again</button>
         </div>
       </div>
@@ -348,21 +354,18 @@ export default function DashboardPage() {
     </AuthGuard>
   );
 
-  /* ── KPI definitions — accent colours updated to indigo/violet palette ── */
+  /* ── KPI definitions ── */
   const kpi1 = [
     { label: 'Total Revenue',  value: revenue,   change: 12.4, accent: '#10b981', icon: <TrendingUp  style={{ width: '16px', height: '16px' }} />, currency: cur },
     { label: 'Total Expenses', value: expenses,  change: -3.1, accent: '#ef4444', icon: <TrendingDown style={{ width: '16px', height: '16px' }} />, currency: cur },
     { label: 'Net Income',     value: netIncome, change: 8.7,  accent: netIncome >= 0 ? '#6366f1' : '#ef4444', icon: <DollarSign style={{ width: '16px', height: '16px' }} />, currency: cur },
-    // Cash balance: was amber #f59e0b → indigo #818cf8
     { label: 'Cash Balance',   value: cash,      change: 2.2,  accent: '#818cf8', icon: <Wallet style={{ width: '16px', height: '16px' }} />, currency: cur },
   ];
   const kpi2 = [
-    // AR: was amber → indigo
-    { label: 'Accounts Receivable', value: ar,                    accent: '#6366f1', icon: <Users        style={{ width: '16px', height: '16px' }} />, currency: cur },
-    { label: 'Accounts Payable',    value: ap,                    accent: '#ef4444', icon: <AlertCircle  style={{ width: '16px', height: '16px' }} />, currency: cur },
-    { label: 'Posted Entries',      value: postedCount,           accent: '#10b981', icon: <CheckCircle  style={{ width: '16px', height: '16px' }} />, isCount: true },
-    // Open invoices: was violet (already close) — keeping #8b5cf6 as is (violet, part of indigo family)
-    { label: 'Open Invoices',       value: unpaidInvoices.length, accent: '#a78bfa', icon: <Clock        style={{ width: '16px', height: '16px' }} />, isCount: true },
+    { label: 'Accounts Receivable', value: ar,                    accent: '#6366f1', icon: <Users       style={{ width: '16px', height: '16px' }} />, currency: cur },
+    { label: 'Accounts Payable',    value: ap,                    accent: '#ef4444', icon: <AlertCircle style={{ width: '16px', height: '16px' }} />, currency: cur },
+    { label: 'Posted Entries',      value: postedCount,           accent: '#10b981', icon: <CheckCircle style={{ width: '16px', height: '16px' }} />, isCount: true },
+    { label: 'Open Invoices',       value: unpaidInvoices.length, accent: '#a78bfa', icon: <Clock       style={{ width: '16px', height: '16px' }} />, isCount: true },
   ];
 
   return (
@@ -392,7 +395,6 @@ export default function DashboardPage() {
         }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
-              {/* Header icon: amber gradient → indigo/violet gradient matching login page */}
               <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: 'linear-gradient(135deg, #4f46e5, #7c3aed)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0 20px rgba(99,102,241,0.4)' }}>
                 <Sparkles style={{ width: '16px', height: '16px', color: '#fff' }} />
               </div>
@@ -401,7 +403,7 @@ export default function DashboardPage() {
               </h1>
             </div>
             <p style={{ fontSize: '12px', color: '#4b5563', letterSpacing: '0.03em' }}>
-              <span style={{ color: '#6b7280' }}>{(company as any)?.name}</span>
+              <span style={{ color: '#6b7280' }}>{typedCompany?.name}</span>
               <span style={{ margin: '0 8px', color: '#374151' }}>·</span>
               {formatDate(new Date().toISOString(), 'EEEE, MMMM dd, yyyy')}
             </p>
@@ -414,7 +416,6 @@ export default function DashboardPage() {
               padding: '16px 20px', borderRadius: '16px',
               border: '1px solid rgba(99,102,241,0.12)', background: 'rgba(99,102,241,0.04)',
             }}>
-              {/* Ring colours: emerald, indigo, indigo-light */}
               <MetricRing value={revenue}               max={Math.max(revenue, 1)}           color="#10b981" label="Revenue"   />
               <MetricRing value={postedCount}           max={Math.max(entries.length, 1)}    color="#6366f1" label="Posted"    />
               <MetricRing value={unpaidInvoices.length} max={Math.max(invoices.length, 1)}   color="#818cf8" label="Open inv." />
@@ -494,7 +495,6 @@ export default function DashboardPage() {
                   </PieChart>
                 </ResponsiveContainer>
               </div>
-              {/* Net margin badge: amber → indigo */}
               <div style={{ marginTop: '8px', padding: '10px 14px', borderRadius: '12px', background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.15)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: '11px', color: '#6b7280' }}>Net margin</span>
                 <span style={{ fontSize: '13px', fontWeight: 700, color: margin >= 0 ? '#10b981' : '#ef4444', fontFamily: 'monospace' }}>{margin.toFixed(1)}%</span>
@@ -533,7 +533,6 @@ export default function DashboardPage() {
                         onMouseEnter={el => (el.currentTarget.style.background = 'rgba(99,102,241,0.04)')}
                         onMouseLeave={el => (el.currentTarget.style.background = 'transparent')}
                       >
-                        {/* Entry number: amber → indigo */}
                         <td style={{ padding: '11px 16px', fontFamily: 'monospace', color: '#818cf8', fontSize: '11px' }}>{e.entryNumber}</td>
                         {!isMobile && <td style={{ padding: '11px 16px', color: '#4b5563', fontSize: '11px', whiteSpace: 'nowrap' }}>{formatDate(e.date)}</td>}
                         {!isMobile && <td style={{ padding: '11px 16px', color: '#9ca3af', maxWidth: '150px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.description}</td>}
@@ -574,7 +573,6 @@ export default function DashboardPage() {
                         onMouseEnter={el => (el.currentTarget.style.background = 'rgba(99,102,241,0.04)')}
                         onMouseLeave={el => (el.currentTarget.style.background = 'transparent')}
                       >
-                        {/* Invoice number: amber → indigo */}
                         <td style={{ padding: '11px 16px', fontFamily: 'monospace', color: '#818cf8', fontSize: '11px' }}>{inv.invoiceNumber}</td>
                         {!isMobile && <td style={{ padding: '11px 16px', color: '#9ca3af', maxWidth: '100px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{inv.contactName}</td>}
                         {!isMobile && <td style={{ padding: '11px 16px', color: '#4b5563', fontSize: '11px', whiteSpace: 'nowrap' }}>{formatDate(inv.dueDate)}</td>}
