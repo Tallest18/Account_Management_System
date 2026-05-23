@@ -33,7 +33,7 @@ function ParticleCanvas() {
         if (d.y < 0) d.y = H; if (d.y > H) d.y = 0;
         ctx.beginPath();
         ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(245,158,11,${d.o})`;
+        ctx.fillStyle = `rgba(148,163,255,${d.o})`;
         ctx.fill();
       }
       for (let i = 0; i < dots.length; i++) {
@@ -44,7 +44,7 @@ function ParticleCanvas() {
             ctx.beginPath();
             ctx.moveTo(dots[i].x, dots[i].y);
             ctx.lineTo(dots[j].x, dots[j].y);
-            ctx.strokeStyle = `rgba(245,158,11,${0.07 * (1 - dist / 110)})`;
+            ctx.strokeStyle = `rgba(148,163,255,${0.07 * (1 - dist / 110)})`;
             ctx.lineWidth = 0.5;
             ctx.stroke();
           }
@@ -143,9 +143,9 @@ export default function LoginPage() {
           pointer-events: none;
           z-index: 0;
         }
-        .orb-1 { width: 520px; height: 520px; background: rgba(245,158,11,0.14); top: -140px; left: -100px; }
-        .orb-2 { width: 420px; height: 420px; background: rgba(217,119,6,0.10); bottom: -120px; right: 60px; }
-        .orb-3 { width: 280px; height: 280px; background: rgba(251,191,36,0.08); top: 40%; left: 38%; }
+        .orb-1 { width: 520px; height: 520px; background: rgba(79,70,229,0.18); top: -140px; left: -100px; }
+        .orb-2 { width: 420px; height: 420px; background: rgba(139,92,246,0.12); bottom: -120px; right: 60px; }
+        .orb-3 { width: 280px; height: 280px; background: rgba(59,130,246,0.10); top: 40%; left: 38%; }
 
         /* ── left panel ── */
         .lf-left {
@@ -167,9 +167,9 @@ export default function LoginPage() {
         .lf-logo-icon {
           width: 42px; height: 42px;
           border-radius: 12px;
-          background: linear-gradient(135deg, #f59e0b, #d97706);
+          background: linear-gradient(135deg, #4f46e5, #7c3aed);
           display: flex; align-items: center; justify-content: center;
-          box-shadow: 0 0 28px rgba(245,158,11,0.45);
+          box-shadow: 0 0 28px rgba(99,102,241,0.5);
           flex-shrink: 0;
         }
         .lf-logo-name {
@@ -192,7 +192,7 @@ export default function LoginPage() {
         }
         .lf-headline h1 em {
           font-style: italic;
-          background: linear-gradient(135deg, #f59e0b, #fbbf24, #fcd34d);
+          background: linear-gradient(135deg, #818cf8, #a78bfa, #60a5fa);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
           background-clip: text;
@@ -224,7 +224,7 @@ export default function LoginPage() {
         .lf-stat-num {
           font-family: 'DM Serif Display', serif;
           font-size: 26px;
-          color: #fbbf24;
+          color: #c4b5fd;
           line-height: 1;
           margin-bottom: 4px;
         }
@@ -244,12 +244,12 @@ export default function LoginPage() {
           cursor: default;
         }
         .lf-feature:hover {
-          border-color: rgba(245,158,11,0.30);
-          background: rgba(245,158,11,0.07);
+          border-color: rgba(129,140,248,0.28);
+          background: rgba(99,102,241,0.07);
         }
         .lf-feature-icon {
           width: 34px; height: 34px; border-radius: 9px;
-          background: rgba(245,158,11,0.15);
+          background: rgba(99,102,241,0.18);
           display: flex; align-items: center; justify-content: center;
           flex-shrink: 0;
         }
@@ -317,8 +317,8 @@ export default function LoginPage() {
 
         .lf-label-row { display: flex; align-items: center; justify-content: space-between; }
         .lf-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: rgba(200,200,230,0.5); }
-        .lf-forgot { font-size: 12px; color: #f59e0b; text-decoration: none; font-weight: 500; transition: color 0.2s; }
-        .lf-forgot:hover { color: #fbbf24; }
+        .lf-forgot { font-size: 12px; color: #818cf8; text-decoration: none; font-weight: 500; transition: color 0.2s; }
+        .lf-forgot:hover { color: #a5b4fc; }
 
         /* ── input wrapper ── */
         .lf-input-wrap {
@@ -330,9 +330,9 @@ export default function LoginPage() {
           overflow: hidden;
         }
         .lf-input-wrap.focused {
-          border-color: rgba(245,158,11,0.65);
-          background: rgba(245,158,11,0.05);
-          box-shadow: 0 0 0 3px rgba(245,158,11,0.12);
+          border-color: rgba(129,140,248,0.6);
+          background: rgba(99,102,241,0.06);
+          box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
         }
         .lf-input-wrap input {
           width: 100%;
@@ -374,10 +374,10 @@ export default function LoginPage() {
           font-weight: 700;
           font-family: 'DM Sans', sans-serif;
           letter-spacing: 0.03em;
-          color: #1a0f00;
+          color: #fff;
           cursor: pointer;
-          background: linear-gradient(135deg, #f59e0b, #d97706);
-          box-shadow: 0 6px 28px rgba(245,158,11,0.38), inset 0 1px 0 rgba(255,255,255,0.20);
+          background: linear-gradient(135deg, #4f46e5, #7c3aed);
+          box-shadow: 0 6px 28px rgba(99,102,241,0.38), inset 0 1px 0 rgba(255,255,255,0.15);
           transition: transform 0.18s, box-shadow 0.18s, opacity 0.18s;
           overflow: hidden;
           margin-top: 4px;
@@ -386,13 +386,13 @@ export default function LoginPage() {
           content: '';
           position: absolute;
           inset: 0;
-          background: linear-gradient(135deg, rgba(255,255,255,0.18), transparent);
+          background: linear-gradient(135deg, rgba(255,255,255,0.12), transparent);
           opacity: 0;
           transition: opacity 0.25s;
         }
         .lf-btn:hover:not(:disabled)::before { opacity: 1; }
-        .lf-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 10px 36px rgba(245,158,11,0.48), inset 0 1px 0 rgba(255,255,255,0.20); }
-        .lf-btn:active:not(:disabled) { transform: translateY(0); box-shadow: 0 4px 16px rgba(245,158,11,0.30); }
+        .lf-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 10px 36px rgba(99,102,241,0.46), inset 0 1px 0 rgba(255,255,255,0.15); }
+        .lf-btn:active:not(:disabled) { transform: translateY(0); box-shadow: 0 4px 16px rgba(99,102,241,0.30); }
         .lf-btn:disabled { opacity: 0.55; cursor: not-allowed; }
         .lf-btn-inner { display: flex; align-items: center; justify-content: center; gap: 8px; }
         .spin { animation: spin 0.8s linear infinite; }
@@ -405,8 +405,8 @@ export default function LoginPage() {
 
         /* ── register link ── */
         .lf-register { text-align: center; font-size: 13px; color: rgba(200,200,230,0.45); }
-        .lf-register a { color: #f59e0b; font-weight: 600; text-decoration: none; transition: color 0.2s; }
-        .lf-register a:hover { color: #fbbf24; }
+        .lf-register a { color: #818cf8; font-weight: 600; text-decoration: none; transition: color 0.2s; }
+        .lf-register a:hover { color: #a5b4fc; }
 
         /* ── security badge ── */
         .lf-badge {
@@ -434,7 +434,7 @@ export default function LoginPage() {
           top: 0; left: -100%;
           width: 60%;
           height: 100%;
-          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
           animation: shimmer 1.2s infinite;
         }
         @keyframes shimmer { to { left: 200%; } }
@@ -607,7 +607,7 @@ export default function LoginPage() {
 }
 
 /* ── Inline SVG icons ── */
-const ic = (w = 16, stroke = 'rgba(245,158,11,0.65)') => ({ width: w, height: w, viewBox: '0 0 24 24', fill: 'none', stroke, strokeWidth: 2, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const });
+const ic = (w = 16, stroke = 'rgba(148,163,255,0.55)') => ({ width: w, height: w, viewBox: '0 0 24 24', fill: 'none', stroke, strokeWidth: 2, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const });
 
 function IconHome() {
   return (
@@ -619,7 +619,7 @@ function IconHome() {
 }
 function IconMail({ focused }: { focused: boolean }) {
   return (
-    <svg {...ic(15, focused ? 'rgba(245,158,11,0.95)' : 'rgba(200,200,230,0.25)')}>
+    <svg {...ic(15, focused ? 'rgba(129,140,248,0.9)' : 'rgba(200,200,230,0.25)')}>
       <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
       <polyline points="22,6 12,13 2,6" />
     </svg>
@@ -627,7 +627,7 @@ function IconMail({ focused }: { focused: boolean }) {
 }
 function IconLock({ focused }: { focused: boolean }) {
   return (
-    <svg {...ic(15, focused ? 'rgba(245,158,11,0.95)' : 'rgba(200,200,230,0.25)')}>
+    <svg {...ic(15, focused ? 'rgba(129,140,248,0.9)' : 'rgba(200,200,230,0.25)')}>
       <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
       <path d="M7 11V7a5 5 0 0110 0v4" />
     </svg>
@@ -652,7 +652,7 @@ function IconEyeOff() {
 }
 function IconArrow() {
   return (
-    <svg {...ic(15, '#1a0f00')}>
+    <svg {...ic(15, 'white')}>
       <line x1="5" y1="12" x2="19" y2="12" />
       <polyline points="12 5 19 12 12 19" />
     </svg>
@@ -676,14 +676,14 @@ function IconShield() {
 }
 function IconZap() {
   return (
-    <svg {...ic(16, '#f59e0b')}>
+    <svg {...ic(16, '#a78bfa')}>
       <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
     </svg>
   );
 }
 function IconAudit() {
   return (
-    <svg {...ic(16, '#f59e0b')}>
+    <svg {...ic(16, '#a78bfa')}>
       <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
       <polyline points="14 2 14 8 20 8" />
       <line x1="16" y1="13" x2="8" y2="13" />
@@ -694,7 +694,7 @@ function IconAudit() {
 }
 function IconChart() {
   return (
-    <svg {...ic(16, '#f59e0b')}>
+    <svg {...ic(16, '#a78bfa')}>
       <line x1="18" y1="20" x2="18" y2="10" />
       <line x1="12" y1="20" x2="12" y2="4" />
       <line x1="6" y1="20" x2="6" y2="14" />
